@@ -40,11 +40,19 @@ see [`api/src/services/caps.ts`](api/src/services/caps.ts) and
 
 ```bash
 npm install
-cp api/.env.example api/.env        # fill in DATABASE_URL + Firebase project id
-npm run db:migrate                  # apply db/migrations/*.sql (needs DATABASE_URL)
-npm run api:dev                     # start the API on :8080
-npm run api:test                   # unit tests (DB-gated tests skip without DATABASE_URL)
+cp api/.env.example api/.env        # already points at the local Docker DB
+npm run db:up                       # start local Postgres (Docker) — the dev DB
+npm run db:migrate                  # apply db/migrations/*.sql
+npm run api:dev                     # start the API on :8080 against the local DB
+npm run api:test                   # tests boot their OWN throwaway Postgres — no setup needed
 ```
+
+**Environments.** Local dev runs the API on your machine against the local Docker
+Postgres (free, offline). GCP is a separate environment: the API runs on **Cloud
+Run** against **Cloud SQL** — same code and migrations, different `DATABASE_URL`.
+A cloud API never points at a laptop DB. Container images are built by **Cloud
+Build** (`gcloud builds submit --config infra/cloudbuild.yaml`), so no local
+Docker is needed to deploy — only to run the local dev DB.
 
 ## Stack
 

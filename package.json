@@ -10,7 +10,10 @@
   "scripts": {
     "api:dev": "npm --workspace api run dev",
     "api:test": "npm --workspace api test",
-    "api:build": "npm --workspace api run build",
+    "api:typecheck": "npm --workspace api run typecheck",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d --wait",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:logs": "docker compose -f infra/docker-compose.yml logs -f db",
     "db:migrate": "node db/migrate.mjs"
   },
   "engines": {

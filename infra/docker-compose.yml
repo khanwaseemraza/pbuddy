@@ -1,0 +1,28 @@
+# Local development database. Persistent Postgres for running the API against on
+# your machine (the inner dev loop). This is NOT used in GCP — there the API runs
+# on Cloud Run against Cloud SQL. Same schema, same migrations, different DATABASE_URL.
+#
+#   npm run db:up        # start it (detached)
+#   npm run db:migrate   # apply db/migrations/*.sql
+#   npm run api:dev      # run the API against it
+#   npm run db:down      # stop it (data is kept in the named volume)
+services:
+  db:
+    image: postgres:16
+    container_name: pbuddy-db
+    environment:
+      POSTGRES_USER: pbuddy
+      POSTGRES_PASSWORD: pbuddy
+      POSTGRES_DB: pbuddy
+    ports:
+      - "5432:5432"
+    volumes:
+      - pbuddy_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pbuddy -d pbuddy"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pbuddy_pgdata:
