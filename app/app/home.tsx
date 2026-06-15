@@ -2,7 +2,7 @@
 // (/corridors) with the Firebase ID token, and shows the signed-in number.
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { Redirect } from 'expo-router';
+import { Link, Redirect } from 'expo-router';
 import { useAuth } from '../src/auth/AuthProvider';
 import { api, ApiError, type Corridor } from '../src/lib/api';
 import { theme } from '../src/theme';
@@ -44,6 +44,12 @@ export default function Home() {
           <Text style={{ color: theme.muted }}>Sign out</Text>
         </Pressable>
       </View>
+
+      <Link href="/address" asChild>
+        <Pressable style={{ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 28 }}>
+          <Text style={{ color: theme.accentText, fontWeight: '800' }}>Send a parcel</Text>
+        </Pressable>
+      </Link>
 
       <Text style={{ color: theme.text, fontSize: 18, fontWeight: '700', marginTop: 32, marginBottom: 12 }}>
         Available corridors
