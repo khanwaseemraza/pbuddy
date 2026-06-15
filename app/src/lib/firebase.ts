@@ -27,5 +27,17 @@ export async function sendOtp(phone: string): Promise<ConfirmationResult> {
   if (!recaptcha) {
     recaptcha = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
   }
-  return signInWithPhoneNumber(auth, phone, recaptcha);
+  try {
+    return await signInWithPhoneNumber(auth, phone, recaptcha);
+  } catch (err) {
+    // reCAPTCHA tokens are single-use — reset so a retry gets a fresh one rather
+    // than failing again with auth/invalid-app-credential.
+    try {
+      recaptcha.clear();
+    } catch {
+      /* ignore */
+    }
+    recaptcha = null;
+    throw err;
+  }
 }
