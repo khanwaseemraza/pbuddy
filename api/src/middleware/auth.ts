@@ -3,6 +3,7 @@
 // client never reaches the DB directly, and every handler scopes by req.user.id.
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { pool } from '../db.ts';
+import { config } from '../config.ts';
 import { verifyIdToken } from '../lib/firebase.ts';
 
 export interface AuthUser {
@@ -56,6 +57,15 @@ export async function authenticate(req: FastifyRequest, reply: FastifyReply): Pr
 export function requireKyc(req: FastifyRequest, reply: FastifyReply, done: () => void): void {
   if (req.user?.kyc_status !== 'verified') {
     reply.code(403).send({ error: 'kyc_required' });
+    return;
+  }
+  done();
+}
+
+/** Guard: require an admin (Firebase UID on the configured allowlist). */
+export function requireAdmin(req: FastifyRequest, reply: FastifyReply, done: () => void): void {
+  if (!req.user || !config.adminUids.includes(req.user.firebase_uid)) {
+    reply.code(403).send({ error: 'admin_required' });
     return;
   }
   done();

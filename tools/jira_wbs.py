@@ -176,7 +176,7 @@ EPICS = [
                 "verify": "Posting a non-GB postcode is rejected; valid postcode resolves to lat/lng.",
             },
             {
-                "code": "E2-S10", "summary": "Compliance evidence exports (HMRC/Home Office/insurer)", "status": "To Do",
+                "code": "E2-S10", "summary": "Compliance evidence exports (HMRC/Home Office/insurer)", "status": "Done",
                 "context": "First-class reports from the audit log proving the rules were enforced.",
                 "ac": ["Per-user annual gross contribution + cap-enforcement export (HMRC)",
                        "Per-student Tier-1 lock + reimbursement-only export (Home Office)",
@@ -232,7 +232,7 @@ EPICS = [
                 "refs": ["api/src/routes/bids.ts"],
             },
             {
-                "code": "E3-S5", "summary": "Price suggestion (cold-start helper)", "status": "To Do",
+                "code": "E3-S5", "summary": "Price suggestion (cold-start helper)", "status": "Done",
                 "context": "Size-band x distance-band suggested contribution, clamped to the cap, to anchor senders.",
                 "ac": ["Suggested contribution computed from bands and never exceeds the cap",
                        "Surfaced on the post-parcel form"],

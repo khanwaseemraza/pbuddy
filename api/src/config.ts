@@ -10,6 +10,13 @@ export const config = {
   // Firestore status mirror is best-effort; disable it (e.g. in tests / when no
   // credentials) so the API never blocks on it. Postgres remains source of truth.
   disableFirestoreMirror: process.env.DISABLE_FIRESTORE_MIRROR === '1',
+  // Admins allowed to pull compliance evidence exports (Firebase UID allowlist).
+  adminUids: (process.env.ADMIN_FIREBASE_UIDS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+  // Price-suggestion bands (pence). A fair "contribution to costs" anchor for the
+  // sender — always clamped below maxSuggestedContributionPennies.
+  priceBase: { S: 200, M: 400, L: 700 } as Record<'S' | 'M' | 'L', number>,
+  pricePerKmPennies: 8,
+  maxSuggestedContributionPennies: 5000, // £50 — a typical single intercity journey
   // Marketplace economics (pence / basis points).
   platformFeeBps: 1200, // 12% platform fee charged to the sender
   escrowFeePennies: 150, // flat £1.50

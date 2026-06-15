@@ -6,6 +6,8 @@ import { matchingRoutes } from './routes/matching.ts';
 import { tripRoutes } from './routes/trips.ts';
 import { parcelRoutes } from './routes/parcels.ts';
 import { bookingRoutes } from './routes/bookings.ts';
+import { pricingRoutes } from './routes/pricing.ts';
+import { complianceRoutes } from './routes/compliance.ts';
 
 export function buildServer() {
   const app = Fastify({ logger: true });
@@ -15,6 +17,8 @@ export function buildServer() {
   app.register(bidRoutes);
   app.register(matchingRoutes);
   app.register(bookingRoutes);
+  app.register(pricingRoutes);
+  app.register(complianceRoutes);
   return app;
 }
 

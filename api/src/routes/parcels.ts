@@ -7,6 +7,8 @@ import { pool } from '../db.ts';
 import { authenticate, requireKyc } from '../middleware/auth.ts';
 import { writeAudit } from '../lib/audit.ts';
 import { lookupPostcode } from '../lib/postcodes.ts';
+import { haversineKm } from '../services/matching.ts';
+import { deriveSizeBand, suggestContribution } from '../services/pricing.ts';
 
 // Categories explicitly disallowed (mirrors the prohibited-items declaration).
 const PROHIBITED_CATEGORIES = new Set([
@@ -107,6 +109,14 @@ export async function parcelRoutes(app: FastifyInstance): Promise<void> {
       // Fixed price: max_contribution is the price and is set immediately.
       const contributionAmount = pricingMode === 'fixed' ? b.max_contribution_pennies : null;
 
+      // Auto-fill a suggested contribution if the sender didn't set one, using the
+      // real geocoded distance and derived size band, clamped to the sender's max.
+      const suggested = b.suggested_contribution_pennies ?? suggestContribution(
+        deriveSizeBand(dim),
+        haversineKm(pickup.lat!, pickup.lng!, dropoff.lat!, dropoff.lng!),
+        b.max_contribution_pennies,
+      );
+
       const { rows } = await pool.query(
         `INSERT INTO parcels (
             sender_id, corridor_id, direction, title, description, category, photo_urls,
@@ -126,7 +136,7 @@ export async function parcelRoutes(app: FastifyInstance): Promise<void> {
           pickup.postcode, b.pickup.address_line, pickup.lat, pickup.lng,
           dropoff.postcode, b.dropoff.address_line, dropoff.lat, dropoff.lng,
           b.length_cm, b.width_cm, b.height_cm, b.weight_g, pieces, b.declared_value_pennies,
-          pricingMode, b.suggested_contribution_pennies ?? null, b.max_contribution_pennies,
+          pricingMode, suggested, b.max_contribution_pennies,
           contributionAmount, b.pickup_window_start, b.pickup_window_end,
           b.dropoff_window_start ?? null, b.dropoff_window_end ?? null,
         ],

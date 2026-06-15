@@ -20,6 +20,7 @@ before(async () => {
   process.env.DATABASE_URL = tpg.connectionString;
   process.env.AUTH_DEV_BYPASS = '1';
   process.env.DISABLE_FIRESTORE_MIRROR = '1'; // best-effort mirror off in tests
+  process.env.ADMIN_FIREBASE_UIDS = 'test-admin';
   ({ pool } = await import('../src/db.ts'));
   ({ reserveCapacity } = await import('../src/services/caps.ts'));
   const { buildServer } = await import('../src/server.ts');
@@ -40,6 +41,11 @@ before(async () => {
   await pool.query(
     `INSERT INTO users (firebase_uid, phone, kyc_status)
      VALUES ('test-outsider','+440000000003','verified')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified'`,
+  );
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status)
+     VALUES ('test-admin','+440000000004','verified')
      ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified'`,
   );
   corridorId = (await pool.query(
@@ -324,4 +330,68 @@ test('cancelling an already-cancelled booking is rejected (illegal transition)',
   });
   assert.equal(again.statusCode, 409);
   assert.equal(again.json().error, 'not_cancellable');
+});
+
+// ---- Price suggestion (PBD-24) -------------------------------------------
+
+test('GET /price-suggestion returns a capped suggestion', async () => {
+  const res = await app.inject({
+    method: 'GET', url: '/price-suggestion?size_band=M&distance_km=260',
+    headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(res.statusCode, 200);
+  const body = res.json();
+  assert.equal(body.size_band, 'M');
+  assert.equal(body.distance_km, 260);
+  // M base 400 + 260km*8 = 2480, under the £50 ceiling.
+  assert.equal(body.suggested_contribution_pennies, 2480);
+});
+
+test('GET /price-suggestion never exceeds the configured ceiling', async () => {
+  const res = await app.inject({
+    method: 'GET', url: '/price-suggestion?size_band=L&distance_km=100000',
+    headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.json().suggested_contribution_pennies, 5000); // clamped to £50
+});
+
+// ---- Compliance exports (PBD-18) -----------------------------------------
+
+test('compliance exports are admin-only', async () => {
+  const denied = await app.inject({
+    method: 'GET', url: '/compliance/export/hmrc',
+    headers: { authorization: 'Bearer test-outsider' },
+  });
+  assert.equal(denied.statusCode, 403);
+  assert.equal(denied.json().error, 'admin_required');
+});
+
+test('HMRC export aggregates contributions + proves cap enforcement', async () => {
+  const res = await app.inject({
+    method: 'GET', url: '/compliance/export/hmrc',
+    headers: { authorization: 'Bearer test-admin' },
+  });
+  assert.equal(res.statusCode, 200);
+  const body = res.json();
+  assert.equal(body.report, 'hmrc_gross_contributions');
+  assert.ok(Array.isArray(body.travellers));
+  assert.ok(Number(body.cap_enforcement.cap_checks) > 0, 'cap checks should be recorded');
+});
+
+test('Home Office + insurer exports return their reports', async () => {
+  const ho = await app.inject({
+    method: 'GET', url: '/compliance/export/home-office',
+    headers: { authorization: 'Bearer test-admin' },
+  });
+  assert.equal(ho.statusCode, 200);
+  assert.equal(ho.json().report, 'home_office_student_visa');
+
+  const ins = await app.inject({
+    method: 'GET', url: '/compliance/export/insurer',
+    headers: { authorization: 'Bearer test-admin' },
+  });
+  assert.equal(ins.statusCode, 200);
+  assert.equal(ins.json().report, 'insurer_bookings');
+  assert.ok(Array.isArray(ins.json().bookings));
 });
