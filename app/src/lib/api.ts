@@ -34,3 +34,38 @@ export interface Corridor {
   dest_city: string;
   display_name: string;
 }
+
+export interface ParcelSummary {
+  id: string;
+  title: string;
+  status: string;
+  direction: string;
+  corridor: string;
+  pickup_postcode: string;
+  dropoff_postcode: string;
+  pricing_mode: 'fixed' | 'auction';
+  max_contribution_pennies: number;
+  contribution_amount_pennies: number | null;
+  pending_bids: string | number;
+}
+
+export interface BidSummary {
+  id: string;
+  bid_contribution_pennies: number;
+  bid_pieces: number;
+  status: string;
+  traveller_name: string | null;
+  trust_score: number;
+  rating_count: number;
+  transport_mode: string;
+  depart_at: string;
+}
+
+export interface HandoffCodes {
+  pickup_qr: string;
+  pickup_otp: string;
+  dropoff_qr: string;
+  dropoff_otp: string;
+}
+
+export const gbp = (pennies: number) => `£${(pennies / 100).toFixed(2)}`;

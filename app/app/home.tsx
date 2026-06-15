@@ -48,7 +48,7 @@ export default function Home() {
         </Pressable>
       </View>
 
-      <Link href="/address" asChild>
+      <Link href="/parcels" asChild>
         <Pressable style={{ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 28 }}>
           <Text style={{ color: theme.accentText, fontWeight: '800' }}>Send a parcel</Text>
         </Pressable>

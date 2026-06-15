@@ -704,3 +704,43 @@ test('POST /users/me without any phone is rejected', async () => {
   assert.equal(r.statusCode, 400);
   assert.equal(r.json().error, 'phone_required');
 });
+
+// ---- Sender flow read endpoints (PBD-46) ---------------------------------
+
+test('sender lists their parcels with bid counts and views bids; non-owner blocked', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const parcel = await app.inject({
+    method: 'POST', url: '/parcels',
+    headers: { authorization: 'Bearer test-sender' },
+    payload: parcelPayload({ title: 'Sender-flow parcel', max_contribution_pennies: 2000 }),
+  });
+  const parcelId = parcel.json().id as string;
+  await app.inject({
+    method: 'POST', url: `/parcels/${parcelId}/bids`,
+    headers: { authorization: 'Bearer test-traveler' },
+    payload: { trip_id: tripId, bid_contribution_pennies: 2000 },
+  });
+
+  // Sender sees their parcel with a pending bid.
+  const list = await app.inject({
+    method: 'GET', url: '/parcels', headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(list.statusCode, 200);
+  const mine = list.json().parcels.find((p: { id: string }) => p.id === parcelId);
+  assert.ok(mine, 'posted parcel should be listed');
+  assert.equal(Number(mine.pending_bids), 1);
+
+  // Sender views the bids.
+  const bids = await app.inject({
+    method: 'GET', url: `/parcels/${parcelId}/bids`, headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(bids.statusCode, 200);
+  assert.equal(bids.json().bids.length, 1);
+  assert.equal(bids.json().bids[0].bid_contribution_pennies, 2000);
+
+  // A non-owner cannot view them.
+  const denied = await app.inject({
+    method: 'GET', url: `/parcels/${parcelId}/bids`, headers: { authorization: 'Bearer test-outsider' },
+  });
+  assert.equal(denied.statusCode, 403);
+});

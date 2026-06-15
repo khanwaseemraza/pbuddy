@@ -160,4 +160,48 @@ export async function parcelRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(201).send(parcel);
     },
   );
+
+  // ---- Sender: list my parcels (with live bid counts) ----
+  app.get('/parcels', { preHandler: [authenticate] }, async (req) => {
+    const { rows } = await pool.query(
+      `SELECT p.id, p.title, p.status, p.direction, c.display_name AS corridor,
+              p.pickup_postcode, p.dropoff_postcode, p.pricing_mode,
+              p.suggested_contribution_pennies, p.max_contribution_pennies,
+              p.contribution_amount_pennies, p.created_at,
+              count(b.id) FILTER (WHERE b.status = 'pending') AS pending_bids
+         FROM parcels p
+         JOIN corridors c ON c.id = p.corridor_id
+         LEFT JOIN bids b ON b.parcel_id = p.id
+        WHERE p.sender_id = $1
+        GROUP BY p.id, c.display_name
+        ORDER BY p.created_at DESC`,
+      [req.user!.id],
+    );
+    return { parcels: rows };
+  });
+
+  // ---- Sender: view pending bids on my parcel ----
+  app.get<{ Params: { id: string } }>(
+    '/parcels/:id/bids',
+    { preHandler: [authenticate] },
+    async (req, reply) => {
+      const owner = await pool.query('SELECT sender_id FROM parcels WHERE id = $1', [req.params.id]);
+      if (!owner.rows[0]) return reply.code(404).send({ error: 'parcel_not_found' });
+      if (owner.rows[0].sender_id !== req.user!.id) {
+        return reply.code(403).send({ error: 'not_your_parcel' });
+      }
+      const { rows } = await pool.query(
+        `SELECT b.id, b.bid_contribution_pennies, b.bid_pieces, b.status, b.expires_at,
+                u.full_name AS traveller_name, u.trust_score, u.rating_count,
+                t.transport_mode, t.depart_at
+           FROM bids b
+           JOIN users u ON u.id = b.traveler_id
+           JOIN trips t ON t.id = b.trip_id
+          WHERE b.parcel_id = $1 AND b.status = 'pending'
+          ORDER BY b.bid_contribution_pennies ASC, u.trust_score DESC`,
+        [req.params.id],
+      );
+      return { bids: rows };
+    },
+  );
 }
