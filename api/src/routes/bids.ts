@@ -5,6 +5,7 @@ import { pool, withTransaction } from '../db.ts';
 import { authenticate, requireKyc } from '../middleware/auth.ts';
 import { writeAudit } from '../lib/audit.ts';
 import { evaluateCap, proBypassAllowed, reserveCapacity, type ProGate } from '../services/caps.ts';
+import { mirrorBookingStatus } from '../lib/mirror.ts';
 
 interface PlaceBidBody {
   trip_id: string;
@@ -209,6 +210,9 @@ export async function bidRoutes(app: FastifyInstance): Promise<void> {
           } as const;
         });
 
+        if (result.http === 201 && 'booking_id' in result.body) {
+          void mirrorBookingStatus(result.body.booking_id); // best-effort live status
+        }
         return reply.code(result.http).send(result.body);
       } catch (err) {
         if ((err as { capExceeded?: boolean }).capExceeded) {

@@ -239,7 +239,7 @@ EPICS = [
                 "verify": "Suggestion endpoint returns a sane, capped value for given size/distance.",
             },
             {
-                "code": "E3-S6", "summary": "Booking lifecycle + Firestore status mirror", "status": "To Do",
+                "code": "E3-S6", "summary": "Booking lifecycle + Firestore status mirror", "status": "Done",
                 "context": "Drive booking states and mirror status to Firestore for live client updates.",
                 "ac": ["Lifecycle transitions enforced server-side",
                        "Each transition writes a booking_status doc readable only by participants",

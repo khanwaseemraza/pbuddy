@@ -7,6 +7,9 @@ export const config = {
   // firebase_uid and no real Firebase verification happens. Must be 0 in prod.
   authDevBypass: process.env.AUTH_DEV_BYPASS === '1',
   postcodesIoBase: process.env.POSTCODES_IO_BASE ?? 'https://api.postcodes.io',
+  // Firestore status mirror is best-effort; disable it (e.g. in tests / when no
+  // credentials) so the API never blocks on it. Postgres remains source of truth.
+  disableFirestoreMirror: process.env.DISABLE_FIRESTORE_MIRROR === '1',
   // Marketplace economics (pence / basis points).
   platformFeeBps: 1200, // 12% platform fee charged to the sender
   escrowFeePennies: 150, // flat £1.50

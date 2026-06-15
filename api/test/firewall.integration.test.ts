@@ -19,6 +19,7 @@ before(async () => {
   tpg = await startTestPg();
   process.env.DATABASE_URL = tpg.connectionString;
   process.env.AUTH_DEV_BYPASS = '1';
+  process.env.DISABLE_FIRESTORE_MIRROR = '1'; // best-effort mirror off in tests
   ({ pool } = await import('../src/db.ts'));
   ({ reserveCapacity } = await import('../src/services/caps.ts'));
   const { buildServer } = await import('../src/server.ts');
@@ -34,6 +35,11 @@ before(async () => {
   await pool.query(
     `INSERT INTO users (firebase_uid, phone, kyc_status, is_traveler)
      VALUES ('test-traveler','+440000000002','verified',true)
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified'`,
+  );
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status)
+     VALUES ('test-outsider','+440000000003','verified')
      ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified'`,
   );
   corridorId = (await pool.query(
@@ -238,4 +244,84 @@ test('POST /trips creates a trip + ledger, and throttles past the weekly limit',
   });
   assert.equal(blocked.statusCode, 429);
   assert.equal(blocked.json().error, 'frequency_limit');
+});
+
+// ---- Booking lifecycle + cancel (PBD-25) ---------------------------------
+
+async function makeBooking(tripId: string, contribution = 2000): Promise<string> {
+  const parcel = await app.inject({
+    method: 'POST', url: '/parcels',
+    headers: { authorization: 'Bearer test-sender' },
+    payload: parcelPayload({ max_contribution_pennies: contribution }),
+  });
+  const parcelId = parcel.json().id as string;
+  const bid = await app.inject({
+    method: 'POST', url: `/parcels/${parcelId}/bids`,
+    headers: { authorization: 'Bearer test-traveler' },
+    payload: { trip_id: tripId, bid_contribution_pennies: contribution },
+  });
+  const bidId = bid.json().id as string;
+  const accept = await app.inject({
+    method: 'POST', url: `/bids/${bidId}/accept`,
+    headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(accept.statusCode, 201, accept.body);
+  return accept.json().booking_id as string;
+}
+
+test('GET /bookings/:id is participant-only', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId);
+
+  const asSender = await app.inject({
+    method: 'GET', url: `/bookings/${bookingId}`,
+    headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(asSender.statusCode, 200);
+  assert.equal(asSender.json().status, 'claimed');
+
+  const asOutsider = await app.inject({
+    method: 'GET', url: `/bookings/${bookingId}`,
+    headers: { authorization: 'Bearer test-outsider' },
+  });
+  assert.equal(asOutsider.statusCode, 403);
+});
+
+test('cancelling a booking releases the reserved capacity back to the ledger', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 2000);
+
+  // £20 committed after the booking.
+  let committed = (await pool.query(
+    'SELECT committed_pennies FROM trip_capacity_ledger WHERE trip_id=$1', [tripId])).rows[0].committed_pennies;
+  assert.equal(committed, 2000);
+
+  const cancel = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/cancel`,
+    headers: { authorization: 'Bearer test-traveler' },
+  });
+  assert.equal(cancel.statusCode, 200, cancel.body);
+  assert.equal(cancel.json().status, 'cancelled');
+
+  // Capacity returned to 0; booking + parcel cancelled.
+  committed = (await pool.query(
+    'SELECT committed_pennies FROM trip_capacity_ledger WHERE trip_id=$1', [tripId])).rows[0].committed_pennies;
+  assert.equal(committed, 0);
+  const b = (await pool.query('SELECT status FROM bookings WHERE id=$1', [bookingId])).rows[0];
+  assert.equal(b.status, 'cancelled');
+});
+
+test('cancelling an already-cancelled booking is rejected (illegal transition)', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId);
+  await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/cancel`,
+    headers: { authorization: 'Bearer test-sender' },
+  });
+  const again = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/cancel`,
+    headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(again.statusCode, 409);
+  assert.equal(again.json().error, 'not_cancellable');
 });
