@@ -15,6 +15,21 @@ let app: import('fastify').FastifyInstance;
 let corridorId: string;
 const realFetch = globalThis.fetch;
 
+// Fake Stripe so the escrow state machine is tested without the network.
+let stripeSeq = 0;
+const fakeStripe = {
+  accounts: { create: async () => ({ id: `acct_test_${++stripeSeq}` }) },
+  accountLinks: { create: async () => ({ url: 'https://connect.stripe.test/onboard' }) },
+  paymentIntents: {
+    create: async () => ({ id: `pi_${++stripeSeq}`, client_secret: `pi_secret_${stripeSeq}`, status: 'requires_payment_method' }),
+    capture: async (id: string) => ({ id, status: 'succeeded' }),
+    cancel: async (id: string) => ({ id, status: 'canceled' }),
+  },
+  transfers: { create: async () => ({ id: `tr_${++stripeSeq}` }) },
+  refunds: { create: async () => ({ id: `re_${++stripeSeq}`, status: 'succeeded' }) },
+  webhooks: { constructEvent: (payload: Buffer) => JSON.parse(payload.toString()) },
+};
+
 before(async () => {
   tpg = await startTestPg();
   process.env.DATABASE_URL = tpg.connectionString;
@@ -23,6 +38,8 @@ before(async () => {
   process.env.ADMIN_FIREBASE_UIDS = 'test-admin';
   ({ pool } = await import('../src/db.ts'));
   ({ reserveCapacity } = await import('../src/services/caps.ts'));
+  const { setStripeForTests } = await import('../src/lib/stripe.ts');
+  setStripeForTests(fakeStripe as never);
   const { buildServer } = await import('../src/server.ts');
   app = buildServer();
   await app.ready();
@@ -394,4 +411,106 @@ test('Home Office + insurer exports return their reports', async () => {
   assert.equal(ins.statusCode, 200);
   assert.equal(ins.json().report, 'insurer_bookings');
   assert.ok(Array.isArray(ins.json().bookings));
+});
+
+// ---- Escrow / payments (PBD-27/29/30/31) ---------------------------------
+
+test('traveller onboards to Connect and gets an onboarding link', async () => {
+  const res = await app.inject({
+    method: 'POST', url: '/connect/onboard',
+    headers: { authorization: 'Bearer test-traveler' },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  assert.match(res.json().stripe_connect_id, /^acct_test_/);
+  assert.ok(res.json().onboarding_url);
+  const stored = (await pool.query(
+    `SELECT stripe_connect_id FROM users WHERE firebase_uid='test-traveler'`)).rows[0];
+  assert.match(stored.stripe_connect_id, /^acct_test_/);
+});
+
+test('full escrow happy path: fund -> capture -> payout', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 2000);
+
+  // Fund (authorize).
+  const fund = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/fund`,
+    headers: { authorization: 'Bearer test-sender' },
+    payload: { with_insurance: true },
+  });
+  assert.equal(fund.statusCode, 201, fund.body);
+  const charges = fund.json().charges;
+  // contribution 2000 + 12% platform (240) + £1.50 escrow (150) + £1.99 insurance (199) = 2589
+  assert.equal(charges.grossPennies, 2589);
+  assert.equal(charges.travelerPayoutPennies, 2000);
+  assert.ok(fund.json().client_secret);
+
+  let payment = (await pool.query('SELECT state FROM payments WHERE booking_id=$1', [bookingId])).rows[0];
+  assert.equal(payment.state, 'authorized');
+  let booking = (await pool.query('SELECT status FROM bookings WHERE id=$1', [bookingId])).rows[0];
+  assert.equal(booking.status, 'funded');
+
+  // Capture (hold).
+  const cap = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/capture`,
+    headers: { authorization: 'Bearer test-admin' },
+  });
+  assert.equal(cap.statusCode, 200, cap.body);
+  payment = (await pool.query('SELECT state FROM payments WHERE booking_id=$1', [bookingId])).rows[0];
+  assert.equal(payment.state, 'captured');
+
+  // Payout (transfer to traveller — onboarded in the previous test).
+  const pay = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/payout`,
+    headers: { authorization: 'Bearer test-admin' },
+  });
+  assert.equal(pay.statusCode, 200, pay.body);
+  assert.match(pay.json().transfer_id, /^tr_/);
+  payment = (await pool.query('SELECT state, stripe_transfer_id FROM payments WHERE booking_id=$1', [bookingId])).rows[0];
+  assert.equal(payment.state, 'released');
+  assert.match(payment.stripe_transfer_id, /^tr_/);
+});
+
+test('double funding is rejected', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 1500);
+  const first = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/fund`,
+    headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(first.statusCode, 201);
+  const second = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/fund`,
+    headers: { authorization: 'Bearer test-sender' },
+  });
+  // The booking is now 'funded', so re-funding is rejected by the status guard.
+  assert.equal(second.statusCode, 409);
+  assert.equal(second.json().error, 'not_fundable');
+});
+
+test('refunding an authorized booking cancels the hold and releases capacity', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 2000);
+  await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/fund`,
+    headers: { authorization: 'Bearer test-sender' },
+  });
+  // £20 committed.
+  let committed = (await pool.query(
+    'SELECT committed_pennies FROM trip_capacity_ledger WHERE trip_id=$1', [tripId])).rows[0].committed_pennies;
+  assert.equal(committed, 2000);
+
+  const refund = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/refund`,
+    headers: { authorization: 'Bearer test-admin' },
+  });
+  assert.equal(refund.statusCode, 200, refund.body);
+
+  const payment = (await pool.query('SELECT state FROM payments WHERE booking_id=$1', [bookingId])).rows[0];
+  assert.equal(payment.state, 'refunded');
+  const booking = (await pool.query('SELECT status FROM bookings WHERE id=$1', [bookingId])).rows[0];
+  assert.equal(booking.status, 'refunded');
+  committed = (await pool.query(
+    'SELECT committed_pennies FROM trip_capacity_ledger WHERE trip_id=$1', [tripId])).rows[0].committed_pennies;
+  assert.equal(committed, 0);
 });

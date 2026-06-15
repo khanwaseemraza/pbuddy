@@ -22,4 +22,9 @@ export const config = {
   escrowFeePennies: 150, // flat £1.50
   insurancePremiumPennies: 199, // £1.99 charged to sender
   insuranceCostPennies: 50, // ~50p paid to insurer
+  // Stripe (TEST mode). Keys live in api/.env (gitignored) / Secret Manager.
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? '',
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+  // Base URL the Connect onboarding flow returns to.
+  appBaseUrl: process.env.APP_BASE_URL ?? 'http://localhost:8080',
 } as const;

@@ -14,7 +14,8 @@
   "dependencies": {
     "fastify": "^4.28.1",
     "firebase-admin": "^12.7.0",
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "stripe": "^22.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

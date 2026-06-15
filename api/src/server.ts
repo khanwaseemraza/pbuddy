@@ -8,6 +8,7 @@ import { parcelRoutes } from './routes/parcels.ts';
 import { bookingRoutes } from './routes/bookings.ts';
 import { pricingRoutes } from './routes/pricing.ts';
 import { complianceRoutes } from './routes/compliance.ts';
+import { paymentRoutes } from './routes/payments.ts';
 
 export function buildServer() {
   const app = Fastify({ logger: true });
@@ -19,6 +20,7 @@ export function buildServer() {
   app.register(bookingRoutes);
   app.register(pricingRoutes);
   app.register(complianceRoutes);
+  app.register(paymentRoutes);
   return app;
 }
 
