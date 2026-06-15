@@ -376,7 +376,7 @@ EPICS = [
              "context": "Post parcel, review bids, accept, fund escrow, show pickup QR, track, rate.",
              "ac": ["Full sender journey reachable", "Pricing shown as a contribution (framing-clean)"],
              "verify": "Walk the sender journey against the API."},
-            {"code": "E7-S4", "summary": "Traveller flow screens", "status": "To Do",
+            {"code": "E7-S4", "summary": "Traveller flow screens", "status": "In Review",
              "context": "Post trip, browse matches (map), bid/claim, open-box, scan, see contribution.",
              "ac": ["Full traveller journey reachable", "Cap-exceeded bids surface the cost-sharing message"],
              "verify": "Walk the traveller journey against the API."},
