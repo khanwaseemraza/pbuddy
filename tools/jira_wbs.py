@@ -123,7 +123,7 @@ EPICS = [
                 "refs": ["api/src/routes/bids.ts"],
             },
             {
-                "code": "E2-S4", "summary": "Trip-frequency throttle (incidental-traveller bounds)", "status": "In Progress",
+                "code": "E2-S4", "summary": "Trip-frequency throttle (incidental-traveller bounds)", "status": "Done",
                 "context": "Cap trips/week (global + per route) so Casual users look like travellers, not couriers; "
                            "hitting the ceiling flags a Pro Buddy upgrade signal.",
                 "ac": ["evaluateFrequency blocks at weekly/route/monthly ceilings",
@@ -168,7 +168,7 @@ EPICS = [
                 "refs": ["db/migrations/0001_init.sql"],
             },
             {
-                "code": "E2-S9", "summary": "Domestic-only allowlist + GB postcode validation", "status": "To Do",
+                "code": "E2-S9", "summary": "Domestic-only allowlist + GB postcode validation", "status": "Done",
                 "context": "Corridors are a curated UK allowlist; pickup/dropoff postcodes validated GB via postcodes.io.",
                 "ac": ["No international route can be created (none exist in the table)",
                        "Both pickup and dropoff resolve to valid GB postcodes",
@@ -207,7 +207,7 @@ EPICS = [
                 "refs": ["db/migrations/0001_init.sql"],
             },
             {
-                "code": "E3-S2", "summary": "Parcels: post with real addresses + value/dimension caps", "status": "In Progress",
+                "code": "E3-S2", "summary": "Parcels: post with real addresses + value/dimension caps", "status": "Done",
                 "context": "Sender posts a parcel with GB pickup/dropoff addresses, size/value within caps, pricing mode.",
                 "ac": ["declared_value <= configured cap; dimensions <= 100cm; piece_count 1..3",
                        "pickup/dropoff postcode+address+lat/lng stored",
