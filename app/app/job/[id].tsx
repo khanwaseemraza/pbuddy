@@ -1,37 +1,23 @@
 // Job (booking) hand-off for the traveller: confirm open-box, scan/enter the
 // pickup code (captures escrow), then the dropoff code (releases the payout).
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { api, ApiError, gbp } from '../../src/lib/api';
+import { useLiveBooking } from '../../src/lib/useLiveBooking';
 import { GlassCard } from '../../src/components/GlassCard';
 import { Button, Input } from '../../src/components/ui';
 import { theme } from '../../src/theme';
 
-interface Booking {
-  id: string;
-  status: string;
-  contribution_pennies: number;
-}
-
 export default function Job() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getToken } = useAuth();
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const { booking, refresh } = useLiveBooking(id!, getToken);
   const [openBoxDone, setOpenBoxDone] = useState(false);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  async function load() {
-    const token = await getToken();
-    if (!token) return;
-    try {
-      setBooking(await api.get<Booking>(`/bookings/${id}`, token));
-    } catch { setError('Could not load this job.'); }
-  }
-  useEffect(() => { load(); }, [id]);
 
   async function call(path: string, body?: object) {
     setBusy(true);
@@ -42,7 +28,7 @@ export default function Job() {
       await api.post(`/bookings/${id}${path}`, token, body);
       if (path === '/open-box') setOpenBoxDone(true);
       setCode('');
-      await load();
+      await refresh();
     } catch (e) {
       const err = e as ApiError;
       const b = err?.body as { error?: string } | undefined;

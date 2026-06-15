@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { api, gbp, type BidSummary, type HandoffCodes } from '../../src/lib/api';
+import { useLiveBooking } from '../../src/lib/useLiveBooking';
 import { GlassCard } from '../../src/components/GlassCard';
 import { Button } from '../../src/components/ui';
 import { QrCode } from '../../src/components/QrCode';
@@ -15,7 +16,9 @@ export default function ParcelDetail() {
   const [bids, setBids] = useState<BidSummary[] | null>(null);
   const [busyBid, setBusyBid] = useState<string | null>(null);
   const [codes, setCodes] = useState<HandoffCodes | null>(null);
+  const [bookingId, setBookingId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const { booking: live } = useLiveBooking(bookingId, getToken);
 
   async function load() {
     try {
@@ -37,6 +40,7 @@ export default function ParcelDetail() {
       const token = await getToken();
       if (!token) return;
       const booking = await api.post<{ booking_id: string }>(`/bids/${bidId}/accept`, token);
+      setBookingId(booking.booking_id);
       const funded = await api.post<{ handoff_codes: HandoffCodes }>(
         `/bookings/${booking.booking_id}/fund`,
         token,
@@ -66,6 +70,11 @@ export default function ParcelDetail() {
             {codes.pickup_otp}
           </Text>
           <Text style={{ color: theme.muted, textAlign: 'center', marginTop: 4 }}>pickup code</Text>
+          {live ? (
+            <Text style={{ color: theme.accent, textAlign: 'center', marginTop: 16, fontWeight: '700' }}>
+              ● Live: {live.status}
+            </Text>
+          ) : null}
         </GlassCard>
       ) : (
         <>
