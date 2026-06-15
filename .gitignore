@@ -14,3 +14,7 @@ service-account*.json
 
 # Claude Code local settings
 .claude/
+
+# Python
+__pycache__/
+*.pyc
