@@ -347,7 +347,7 @@ EPICS = [
              "context": "Disputes, payout overrides, reconciliation views for the founder.",
              "ac": ["Read/act on bookings, payments, disputes without direct DB access"],
              "verify": "Console performs a manual payout override end-to-end."},
-            {"code": "E6-S4", "summary": "Compliance exports & reconciliation views", "status": "To Do",
+            {"code": "E6-S4", "summary": "Compliance exports & reconciliation views", "status": "In Review",
              "context": "Operationalise the E2-S10 exports in the console.",
              "ac": ["One-click HMRC/Home Office/insurer exports for a date range"],
              "verify": "Exports render correct data for a seeded period."},
