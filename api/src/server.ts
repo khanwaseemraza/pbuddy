@@ -13,6 +13,7 @@ import { handoffRoutes } from './routes/handoff.ts';
 import { reviewRoutes } from './routes/reviews.ts';
 import { kycRoutes } from './routes/kyc.ts';
 import { userRoutes } from './routes/users.ts';
+import { disputeRoutes } from './routes/disputes.ts';
 
 export function buildServer() {
   const app = Fastify({ logger: true });
@@ -29,6 +30,7 @@ export function buildServer() {
   app.register(reviewRoutes);
   app.register(kycRoutes);
   app.register(userRoutes);
+  app.register(disputeRoutes);
   return app;
 }
 

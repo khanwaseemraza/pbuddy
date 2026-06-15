@@ -538,6 +538,69 @@ test('refunding an authorized booking cancels the hold and releases capacity', a
   assert.equal(committed, 0);
 });
 
+// ---- Disputes (PBD-40) ---------------------------------------------------
+
+test('participant opens a dispute; admin resolves with a refund (capacity freed)', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 2000);
+  await fundBooking(bookingId);
+
+  const open = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/dispute`,
+    headers: { authorization: 'Bearer test-sender' },
+    payload: { reason_code: 'not_received', description: 'Never arrived' },
+  });
+  assert.equal(open.statusCode, 201, open.body);
+  const disputeId = open.json().dispute_id;
+  let bk = (await pool.query('SELECT status FROM bookings WHERE id=$1', [bookingId])).rows[0];
+  assert.equal(bk.status, 'disputed');
+
+  // Non-admin cannot resolve.
+  const denied = await app.inject({
+    method: 'POST', url: `/disputes/${disputeId}/resolve`,
+    headers: { authorization: 'Bearer test-outsider' }, payload: { resolution: 'refund' },
+  });
+  assert.equal(denied.statusCode, 403);
+
+  // Admin refunds.
+  const res = await app.inject({
+    method: 'POST', url: `/disputes/${disputeId}/resolve`,
+    headers: { authorization: 'Bearer test-admin' }, payload: { resolution: 'refund', notes: 'No proof of delivery' },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  bk = (await pool.query('SELECT status FROM bookings WHERE id=$1', [bookingId])).rows[0];
+  assert.equal(bk.status, 'refunded');
+  const pay = (await pool.query('SELECT state FROM payments WHERE booking_id=$1', [bookingId])).rows[0];
+  assert.equal(pay.state, 'refunded');
+  const committed = (await pool.query(
+    'SELECT committed_pennies FROM trip_capacity_ledger WHERE trip_id=$1', [tripId])).rows[0].committed_pennies;
+  assert.equal(committed, 0);
+  const d = (await pool.query('SELECT status FROM disputes WHERE id=$1', [disputeId])).rows[0];
+  assert.equal(d.status, 'resolved_refund');
+});
+
+test('admin resolves a dispute with release (traveller paid)', async () => {
+  await pool.query(`UPDATE users SET stripe_connect_id='acct_test_dispute' WHERE firebase_uid='test-traveler'`);
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 2000);
+  await fundBooking(bookingId);
+  const open = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/dispute`,
+    headers: { authorization: 'Bearer test-traveler' }, payload: { reason_code: 'sender_no_show' },
+  });
+  const disputeId = open.json().dispute_id;
+  const res = await app.inject({
+    method: 'POST', url: `/disputes/${disputeId}/resolve`,
+    headers: { authorization: 'Bearer test-admin' }, payload: { resolution: 'release' },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  const pay = (await pool.query('SELECT state, stripe_transfer_id FROM payments WHERE booking_id=$1', [bookingId])).rows[0];
+  assert.equal(pay.state, 'released');
+  assert.match(pay.stripe_transfer_id, /^tr_/);
+  const bk = (await pool.query('SELECT status FROM bookings WHERE id=$1', [bookingId])).rows[0];
+  assert.equal(bk.status, 'released');
+});
+
 // ---- Hand-off: open-box -> pickup(capture) -> dropoff(payout) (PBD-34/35/36) ----
 
 async function fundBooking(bookingId: string) {
