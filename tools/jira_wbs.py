@@ -372,7 +372,7 @@ EPICS = [
              "context": "Postcode lookup -> confirm address -> pin on a free OSM map; web + native.",
              "ac": ["Invalid/non-GB postcode rejected", "Valid postcode resolves to a correct pin"],
              "verify": "Enter a UK postcode; pin renders on all platforms."},
-            {"code": "E7-S3", "summary": "Sender flow screens", "status": "To Do",
+            {"code": "E7-S3", "summary": "Sender flow screens", "status": "In Review",
              "context": "Post parcel, review bids, accept, fund escrow, show pickup QR, track, rate.",
              "ac": ["Full sender journey reachable", "Pricing shown as a contribution (framing-clean)"],
              "verify": "Walk the sender journey against the API."},
