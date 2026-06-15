@@ -75,3 +75,37 @@ Docker is needed to deploy — only to run the local dev DB.
 GCP + Firebase. Cloud Run (API) · Cloud SQL for PostgreSQL · Firebase Auth (phone OTP) ·
 Firestore (live status mirror) + FCM (push) · Cloud Storage · Stripe Connect (escrow) ·
 Stripe Identity (KYC) · Anansi (embedded insurance) · postcodes.io + MapLibre + OSM (free maps).
+
+## Live deployment (GCP — project pbuddy-mvp)
+
+- **Web app:** https://pbuddy-mvp.web.app (Firebase Hosting; Expo web build)
+- **API:** https://pbuddy-api-413412903611.europe-west2.run.app (Cloud Run, europe-west2)
+- **DB:** Cloud SQL Postgres `pbuddy-db` (smallest, single-zone). Billed to the
+  free-trial credit. Cloud Run scales to zero; Hosting is free — so the only idle
+  cost is the DB. Pause it when not demoing:
+
+```bash
+infra/cloudsql.sh stop      # ~$2/mo storage only while stopped
+infra/cloudsql.sh start
+```
+
+### Redeploy
+
+```bash
+# API (build + push + deploy)
+gcloud builds submit --config infra/cloudbuild.yaml --region=europe-west2 .
+
+# Migrations (via the Cloud SQL Auth Proxy, since Cloud Build has no socket)
+cloud-sql-proxy --token "$(gcloud auth print-access-token)" --port 6543 \
+  pbuddy-mvp:europe-west2:pbuddy-db &
+DATABASE_URL='postgres://pbuddy:<pw>@127.0.0.1:6543/pbuddy' node db/migrate.mjs
+
+# Web (build with the API URL, then deploy hosting)
+cd app && EXPO_PUBLIC_API_BASE_URL=https://pbuddy-api-413412903611.europe-west2.run.app \
+  npx expo export --platform web --clear && cd ..
+firebase deploy --only hosting --project pbuddy-mvp
+```
+
+Runtime config: API runs with `AUTH_DEV_BYPASS=0` (real Firebase token verification),
+`DATABASE_URL` + `STRIPE_SECRET_KEY` from Secret Manager, Cloud SQL via the connector,
+and the runtime service account `pbuddy-run@` (Cloud SQL client + Firestore + secret access).

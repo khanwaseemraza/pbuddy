@@ -27,4 +27,8 @@ export const config = {
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
   // Base URL the Connect onboarding flow returns to.
   appBaseUrl: process.env.APP_BASE_URL ?? 'http://localhost:8080',
+  // Web origins allowed to call the API (CORS). Override via CORS_ORIGINS (CSV).
+  corsOrigins: (process.env.CORS_ORIGINS ??
+    'https://pbuddy-mvp.web.app,https://pbuddy-mvp.firebaseapp.com,https://pbuddy.co.uk,http://localhost:8081,http://localhost:19006')
+    .split(',').map((s) => s.trim()).filter(Boolean),
 } as const;

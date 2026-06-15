@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
 import { config } from './config.ts';
 import { healthRoutes } from './routes/health.ts';
 import { bidRoutes } from './routes/bids.ts';
@@ -19,6 +20,12 @@ import { proRoutes } from './routes/pro.ts';
 
 export function buildServer() {
   const app = Fastify({ logger: true });
+  // The web app calls the API cross-origin (Firebase Hosting -> Cloud Run). Auth
+  // is via Bearer tokens (no cookies), so we just allow the known origins.
+  app.register(cors, {
+    origin: config.corsOrigins,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  });
   app.register(healthRoutes);
   app.register(tripRoutes);
   app.register(parcelRoutes);
