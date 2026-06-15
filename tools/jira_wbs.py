@@ -176,6 +176,18 @@ EPICS = [
                 "verify": "Posting a non-GB postcode is rejected; valid postcode resolves to lat/lng.",
             },
             {
+                "code": "E2-S11", "summary": "User provisioning + real Firebase token verification", "status": "In Progress",
+                "context": "The auth middleware verifies a Firebase ID token but requires the users row to "
+                           "already exist (403 user_not_provisioned). Add token verification without a service "
+                           "account (verifyIdToken needs only the project id) and a POST /users/me that "
+                           "auto-creates the user from the verified token, so the app can make authenticated calls.",
+                "ac": ["API verifies real Firebase ID tokens (no ADC/service-account needed; project id only)",
+                       "POST /users/me upserts the user from the verified token (uid + phone)",
+                       "Authenticated endpoints work after first provisioning; dev-bypass still works for tests"],
+                "verify": "Sign in on web -> app provisions the user -> /corridors loads. Integration test covers upsert.",
+                "refs": ["api/src/middleware/auth.ts", "api/src/lib/firebase.ts", "api/src/routes/users.ts"],
+            },
+            {
                 "code": "E2-S10", "summary": "Compliance evidence exports (HMRC/Home Office/insurer)", "status": "Done",
                 "context": "First-class reports from the audit log proving the rules were enforced.",
                 "ac": ["Per-user annual gross contribution + cap-enforcement export (HMRC)",

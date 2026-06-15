@@ -1,19 +1,20 @@
-// Firebase Admin wrapper for verifying phone-auth ID tokens. In Cloud Run this
-// uses Application Default Credentials; locally it can use a service-account
-// file via GOOGLE_APPLICATION_CREDENTIALS, or be bypassed for dev/tests.
+// Firebase Admin wrapper for verifying phone-auth ID tokens.
+//
+// verifyIdToken only needs the PROJECT ID (it fetches Google's public certs and
+// checks the token's audience/issuer) — no service account / ADC required. So we
+// initialise with just projectId, which lets the API verify real tokens locally
+// and on Cloud Run without credentials. (Other Admin operations would need
+// credentials, but we don't use them here.)
 import { config } from '../config.ts';
 
 let _adminAuth: import('firebase-admin/auth').Auth | null = null;
 
 async function getAuth() {
   if (_adminAuth) return _adminAuth;
-  const { initializeApp, getApps, applicationDefault } = await import('firebase-admin/app');
+  const { initializeApp, getApps } = await import('firebase-admin/app');
   const { getAuth: _getAuth } = await import('firebase-admin/auth');
   if (getApps().length === 0) {
-    initializeApp({
-      credential: applicationDefault(),
-      projectId: config.firebaseProjectId,
-    });
+    initializeApp({ projectId: config.firebaseProjectId });
   }
   _adminAuth = _getAuth();
   return _adminAuth;

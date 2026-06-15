@@ -19,6 +19,8 @@ export default function Home() {
       try {
         const token = await getToken();
         if (!token) return;
+        // Provision the user row from the verified token on first load, then load data.
+        await api.post('/users/me', token);
         const data = await api.get<{ corridors: Corridor[] }>('/corridors', token);
         setCorridors(data.corridors);
       } catch (e) {

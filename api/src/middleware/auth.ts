@@ -17,33 +17,47 @@ export interface AuthUser {
   is_traveler: boolean;
 }
 
+export interface AuthToken {
+  uid: string;
+  phoneNumber?: string;
+}
+
 declare module 'fastify' {
   interface FastifyRequest {
+    auth?: AuthToken;
     user?: AuthUser;
   }
 }
 
-export async function authenticate(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+/**
+ * Verify the Firebase ID token and set req.auth. Does NOT require a provisioned
+ * user — used by the provisioning endpoint (POST /users/me) which runs before the
+ * user row exists.
+ */
+export async function verifyToken(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     reply.code(401).send({ error: 'missing_bearer_token' });
     return;
   }
   const token = header.slice('Bearer '.length).trim();
-
-  let uid: string;
   try {
-    ({ uid } = await verifyIdToken(token));
+    req.auth = await verifyIdToken(token);
   } catch {
     reply.code(401).send({ error: 'invalid_token' });
-    return;
   }
+}
+
+/** Verify the token AND resolve it to a provisioned PBuddy user (req.user). */
+export async function authenticate(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  await verifyToken(req, reply);
+  if (reply.sent || !req.auth) return;
 
   const { rows } = await pool.query<AuthUser>(
     `SELECT id, firebase_uid, tier, immigration_class, kyc_status, rtw_status,
             is_sender, is_traveler
        FROM users WHERE firebase_uid = $1`,
-    [uid],
+    [req.auth.uid],
   );
   const user = rows[0];
   if (!user) {

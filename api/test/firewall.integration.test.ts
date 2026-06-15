@@ -664,3 +664,43 @@ test('reconciliation is admin-only', async () => {
   });
   assert.equal(res.statusCode, 403);
 });
+
+// ---- User provisioning (PBD-59) ------------------------------------------
+
+test('POST /users/me provisions the user from the token, unblocking authed calls', async () => {
+  // A brand-new (unprovisioned) uid is rejected by an authenticated endpoint.
+  const denied = await app.inject({
+    method: 'GET', url: '/corridors', headers: { authorization: 'Bearer brand-new-uid' },
+  });
+  assert.equal(denied.statusCode, 403);
+  assert.equal(denied.json().error, 'user_not_provisioned');
+
+  // Provision (dev-bypass has no phone claim, so supply one).
+  const prov = await app.inject({
+    method: 'POST', url: '/users/me', headers: { authorization: 'Bearer brand-new-uid' },
+    payload: { phone: '+447100000001', full_name: 'New User' },
+  });
+  assert.equal(prov.statusCode, 200, prov.body);
+  assert.equal(prov.json().firebase_uid, 'brand-new-uid');
+
+  // Now authenticated calls succeed.
+  const ok = await app.inject({
+    method: 'GET', url: '/corridors', headers: { authorization: 'Bearer brand-new-uid' },
+  });
+  assert.equal(ok.statusCode, 200);
+
+  // GET /users/me returns the profile; provisioning is idempotent.
+  const me = await app.inject({
+    method: 'GET', url: '/users/me', headers: { authorization: 'Bearer brand-new-uid' },
+  });
+  assert.equal(me.statusCode, 200);
+  assert.equal(me.json().firebase_uid, 'brand-new-uid');
+});
+
+test('POST /users/me without any phone is rejected', async () => {
+  const r = await app.inject({
+    method: 'POST', url: '/users/me', headers: { authorization: 'Bearer no-phone-uid' }, payload: {},
+  });
+  assert.equal(r.statusCode, 400);
+  assert.equal(r.json().error, 'phone_required');
+});
