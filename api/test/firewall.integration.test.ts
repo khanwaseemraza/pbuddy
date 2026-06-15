@@ -744,3 +744,35 @@ test('sender lists their parcels with bid counts and views bids; non-owner block
   });
   assert.equal(denied.statusCode, 403);
 });
+
+// ---- Traveller flow read endpoints (PBD-47) ------------------------------
+
+test('traveller lists their trips with remaining cap headroom', async () => {
+  await seedTripWithCap(5000);
+  const res = await app.inject({
+    method: 'GET', url: '/trips', headers: { authorization: 'Bearer test-traveler' },
+  });
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.json().trips.length > 0);
+  assert.ok('remaining_pennies' in res.json().trips[0]);
+});
+
+test('GET /bookings returns the user\'s bookings with role flags', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 2000);
+  // Traveller sees it as a job (is_traveler).
+  const asTrav = await app.inject({
+    method: 'GET', url: '/bookings', headers: { authorization: 'Bearer test-traveler' },
+  });
+  assert.equal(asTrav.statusCode, 200);
+  const job = asTrav.json().bookings.find((b: { id: string }) => b.id === bookingId);
+  assert.ok(job);
+  assert.equal(job.is_traveler, true);
+  // Sender sees it as a send (is_sender).
+  const asSender = await app.inject({
+    method: 'GET', url: '/bookings', headers: { authorization: 'Bearer test-sender' },
+  });
+  const send = asSender.json().bookings.find((b: { id: string }) => b.id === bookingId);
+  assert.ok(send);
+  assert.equal(send.is_sender, true);
+});

@@ -10,6 +10,30 @@ import { canTransition, type BookingStatus } from '../services/bookingLifecycle.
 import { mirrorBookingStatus } from '../lib/mirror.ts';
 
 export async function bookingRoutes(app: FastifyInstance): Promise<void> {
+  // List the current user's bookings (as traveller and/or sender), with the
+  // parcel route + whether the open-box inspection has been done.
+  app.get('/bookings', { preHandler: [authenticate] }, async (req) => {
+    const uid = req.user!.id;
+    const { rows } = await pool.query(
+      `SELECT b.id, b.status, b.contribution_pennies,
+              (b.sender_id = $1)   AS is_sender,
+              (b.traveler_id = $1) AS is_traveler,
+              p.title, p.pickup_postcode, p.dropoff_postcode,
+              c.display_name AS corridor, t.depart_at, t.transport_mode,
+              EXISTS (SELECT 1 FROM handoff_events h
+                        WHERE h.booking_id = b.id AND h.type = 'open_box_confirmed' AND h.success)
+                                   AS open_box_done
+         FROM bookings b
+         JOIN parcels p   ON p.id = b.parcel_id
+         JOIN trips t     ON t.id = b.trip_id
+         JOIN corridors c ON c.id = t.corridor_id
+        WHERE b.sender_id = $1 OR b.traveler_id = $1
+        ORDER BY b.claimed_at DESC`,
+      [uid],
+    );
+    return { bookings: rows };
+  });
+
   // Participant-only read.
   app.get<{ Params: { id: string } }>(
     '/bookings/:id',

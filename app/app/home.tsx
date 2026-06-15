@@ -2,7 +2,7 @@
 // (/corridors) with the Firebase ID token, and shows the signed-in number.
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { Link, Redirect } from 'expo-router';
+import { Link, Redirect, type Href } from 'expo-router';
 import { useAuth } from '../src/auth/AuthProvider';
 import { api, ApiError, type Corridor } from '../src/lib/api';
 import { GlassCard } from '../src/components/GlassCard';
@@ -48,11 +48,14 @@ export default function Home() {
         </Pressable>
       </View>
 
-      <Link href="/parcels" asChild>
-        <Pressable style={{ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 28 }}>
-          <Text style={{ color: theme.accentText, fontWeight: '800' }}>Send a parcel</Text>
-        </Pressable>
-      </Link>
+      <View style={{ flexDirection: 'row', gap: 12, marginTop: 28 }}>
+        <HubButton href="/parcels" label="Send a parcel" filled />
+        <HubButton href="/trips" label="Carry & earn" />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+        <HubButton href="/jobs" label="My jobs" />
+        <HubButton href="/parcels" label="My parcels" />
+      </View>
 
       <Text style={{ color: theme.text, fontSize: 18, fontWeight: '700', marginTop: 32, marginBottom: 12 }}>
         Available corridors
@@ -74,6 +77,26 @@ export default function Home() {
         />
       )}
     </View>
+  );
+}
+
+function HubButton({ href, label, filled }: { href: Href; label: string; filled?: boolean }) {
+  return (
+    <Link href={href} asChild>
+      <Pressable
+        style={{
+          flex: 1,
+          backgroundColor: filled ? theme.accent : theme.cardSolid,
+          borderWidth: filled ? 0 : 1,
+          borderColor: theme.border,
+          borderRadius: 12,
+          paddingVertical: 16,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: filled ? theme.accentText : theme.text, fontWeight: '800' }}>{label}</Text>
+      </Pressable>
+    </Link>
   );
 }
 

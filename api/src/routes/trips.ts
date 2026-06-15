@@ -29,6 +29,22 @@ export async function tripRoutes(app: FastifyInstance): Promise<void> {
     return { corridors: rows };
   });
 
+  // ---- Traveller: list my trips (with remaining cost-sharing headroom) ----
+  app.get('/trips', { preHandler: [authenticate] }, async (req) => {
+    const { rows } = await pool.query(
+      `SELECT t.id, t.direction, t.transport_mode, t.depart_at, t.status,
+              t.journey_cost_pennies, l.committed_pennies, l.remaining_pennies,
+              c.display_name AS corridor
+         FROM trips t
+         JOIN corridors c ON c.id = t.corridor_id
+         JOIN trip_capacity_ledger l ON l.trip_id = t.id
+        WHERE t.traveler_id = $1
+        ORDER BY t.depart_at DESC`,
+      [req.user!.id],
+    );
+    return { trips: rows };
+  });
+
   app.post<{ Body: CreateTripBody }>(
     '/trips',
     { preHandler: [authenticate, requireKyc] },
