@@ -5,9 +5,9 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "node --watch src/server.ts",
+    "dev": "node --watch --env-file-if-exists=.env src/server.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "start": "node src/server.ts",
+    "start": "node --env-file-if-exists=.env src/server.ts",
     "test": "node --experimental-strip-types --test test/**/*.test.ts",
     "lint:framing": "node scripts/banned-words.mjs"
   },
