@@ -356,7 +356,7 @@ EPICS = [
              "context": "Expo Router app; phone-OTP via Firebase (JS SDK web, RN Firebase native).",
              "ac": ["App runs on iOS/Android/web", "Phone-OTP sign-in issues an ID token used by the API"],
              "verify": "Sign in with a test phone number on web + device."},
-            {"code": "E7-S2", "summary": "AddressPicker (postcodes.io + MapLibre)", "status": "To Do",
+            {"code": "E7-S2", "summary": "AddressPicker (postcodes.io + MapLibre)", "status": "In Review",
              "context": "Postcode lookup -> confirm address -> pin on a free OSM map; web + native.",
              "ac": ["Invalid/non-GB postcode rejected", "Valid postcode resolves to a correct pin"],
              "verify": "Enter a UK postcode; pin renders on all platforms."},
