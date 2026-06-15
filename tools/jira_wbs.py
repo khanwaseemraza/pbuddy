@@ -62,7 +62,7 @@ EPICS = [
                 "refs": ["~/.pbuddy-git-credentials (outside repo)"],
             },
             {
-                "code": "E1-S5", "summary": "CI pipeline (tests + framing lint + typecheck)", "status": "To Do",
+                "code": "E1-S5", "summary": "CI pipeline (tests + framing lint + typecheck)", "status": "Done",
                 "context": "GitHub Actions running unit tests, the framing banned-word lint, and tsc on every PR.",
                 "ac": ["Workflow runs npm test, lint:framing, typecheck on push/PR",
                        "DB-gated integration tests run against an ephemeral Postgres service",
