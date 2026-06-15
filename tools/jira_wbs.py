@@ -352,7 +352,7 @@ EPICS = [
                "Real addresses with map pins.",
                "Sender and traveller flows complete end-to-end."],
         "children": [
-            {"code": "E7-S1", "summary": "Expo scaffold + Firebase phone auth", "status": "To Do",
+            {"code": "E7-S1", "summary": "Expo scaffold + Firebase phone auth", "status": "In Review",
              "context": "Expo Router app; phone-OTP via Firebase (JS SDK web, RN Firebase native).",
              "ac": ["App runs on iOS/Android/web", "Phone-OTP sign-in issues an ID token used by the API"],
              "verify": "Sign in with a test phone number on web + device."},
