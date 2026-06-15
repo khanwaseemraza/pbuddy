@@ -3,10 +3,14 @@ import { config } from './config.ts';
 import { healthRoutes } from './routes/health.ts';
 import { bidRoutes } from './routes/bids.ts';
 import { matchingRoutes } from './routes/matching.ts';
+import { tripRoutes } from './routes/trips.ts';
+import { parcelRoutes } from './routes/parcels.ts';
 
 export function buildServer() {
   const app = Fastify({ logger: true });
   app.register(healthRoutes);
+  app.register(tripRoutes);
+  app.register(parcelRoutes);
   app.register(bidRoutes);
   app.register(matchingRoutes);
   return app;
