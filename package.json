@@ -1,0 +1,23 @@
+{
+  "name": "pbuddy",
+  "version": "0.0.1",
+  "private": true,
+  "description": "PBuddy — cost-sharing peer-to-peer parcel delivery marketplace (UK)",
+  "workspaces": [
+    "api",
+    "app"
+  ],
+  "scripts": {
+    "api:dev": "npm --workspace api run dev",
+    "api:test": "npm --workspace api test",
+    "api:build": "npm --workspace api run build",
+    "db:migrate": "node db/migrate.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "firebase-tools": "^15.20.0"
+  }
+}

@@ -1,0 +1,56 @@
+# Build + deploy the PBuddy API to Cloud Run, and apply DB migrations.
+# Secrets (DATABASE_URL etc.) are pulled from Secret Manager at deploy time.
+#
+#   gcloud builds submit --config infra/cloudbuild.yaml
+steps:
+  # 1. Build the API image.
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - infra/Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/pbuddy/api:$SHORT_SHA
+      - .
+
+  # 2. Push it.
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/pbuddy/api:$SHORT_SHA
+
+  # 3. Apply DB migrations (forward-only runner) against Cloud SQL.
+  - name: node:22-slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        npm install --workspace api --include-workspace-root --omit=dev
+        node db/migrate.mjs
+    secretEnv: ['DATABASE_URL']
+
+  # 4. Deploy to Cloud Run with the Cloud SQL connector attached.
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - pbuddy-api
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/pbuddy/api:$SHORT_SHA
+      - --region=${_REGION}
+      - --add-cloudsql-instances=${_CLOUDSQL_INSTANCE}
+      - --set-secrets=DATABASE_URL=DATABASE_URL:latest
+      - --set-env-vars=FIREBASE_PROJECT_ID=$PROJECT_ID
+      - --allow-unauthenticated
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/DATABASE_URL/versions/latest
+      env: DATABASE_URL
+
+substitutions:
+  _REGION: europe-west2
+  _CLOUDSQL_INSTANCE: ''
+
+options:
+  logging: CLOUD_LOGGING_ONLY

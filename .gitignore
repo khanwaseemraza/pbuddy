@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+coverage/
+.expo/
+web-build/
+*.tsbuildinfo
+service-account*.json
+
+# Claude Code local settings
+.claude/

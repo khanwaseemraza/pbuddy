@@ -1,0 +1,106 @@
+1 / 10
+PBuddy
+Peer-to-peer parcel delivery.
+Faster, cheaper intercity delivery using existing traveler capacity.
+Waseem Raza | Founder | Pre-Seed | UK Launch
+Info: We are building a trusted, peer-topeer parcel delivery marketplace that
+allows everyday people to send and
+receive packages faster and cheaper by
+utilizing the empty luggage space of
+people who are already traveling.
+2 / 10
+Delivery is broken.
+Too Expensive
+Traditional couriers overcharge for
+lightweight or intercity items.
+Too Rigid
+Same-day / next-day delivery is
+priced at an extreme premium.
+Wasted Capacity
+Millions travel daily with empty
+empty luggage space, but there is
+there is no trusted way to use it.
+it.
+Info: If you want to send a lightweight parcel from London to Manchester today, your options are terrible. Couriers are expensive, and next-day is a massive premium.
+Meanwhile, thousands travel that exact route with empty space. The capacity is there, but the trust is missing.
+3 / 10
+The trusted marketplace.
+Connect
+Match senders with verified
+travelers already taking the route.
+Secure
+Escrow payments and QR/OTP
+verification at hand-off.
+Save & Earn
+Cheaper delivery for the sender;
+instant monetization for the
+traveler.
+Info: PBuddy bridges this gap. We connect senders with verified travelers already heading to that destination. Senders get cheaper delivery. Travelers monetize unused
+space. And most importantly, we provide the verification and escrow systems required to make this safe.
+4 / 10
+Simple. Secure. Scalable.
+1
+Post
+Sender lists parcel details,
+destination, and timeline.
+2
+Match
+A verified traveler claims the
+delivery for their existing route.
+3
+Hand-off
+Secure QR scan at pickup and dropoff unlocks escrow payment.
+Info: The process is simple. A sender posts a parcel. The platform surfaces verified travelers taking that route. The traveler claims the job, and the sender pays into our
+escrow. When they meet, a QR scan confirms the hand-off. The same happens at destination.
+5 / 10
+Asset-light. 100% Scalable.
+We take a cut of every successful delivery.
+Platform Fee: 10-15% charged to the sender on booking.
+Trust/Escrow Fee: Flat fee (£1.50) for secure payment holding.
+No fleets. No warehouses. No employed drivers.
+Info: Our business model is pure marketplace economics. We charge a percentage-based platform fee to the sender, plus a small flat fee for escrow. Because we don't
+own fleets of vans, and we don't lease warehouses, our margins are excellent and infinitely scalable.
+6 / 10
+A massive, unoptimized market.
+TAM (£14B+)
+Total UK domestic parcel delivery market.
+SAM (£500M)
+Intercity, lightweight consumer & SME parcels.
+SOM (£25M)
+Our initial focus: Students, diaspora families, and SMEs on 3 core UK corridors.
+Info: The UK domestic parcel delivery market is enormous—over £14 Billion. But we aren't boiling the ocean. We are targeting the specific segment of lightweight,
+intercity parcels. Our immediate market consists ofstudents, migrant families, and SMEs.
+7 / 10
+Starting with high-density corridors.
+Phase 1: Route Density
+Launch exclusively on 2-3 specific, high-traffic UK city pairs
+(e.g. London — Manchester).
+Guarantees liquidity: Senders find travelers immediately.
+Phase 2: Node Infrastructure
+Partner with local corner shops and smart lockers (Custody
+Nodes).
+Allows for asynchronous pickup and drop-off.
+Info: Marketplaces fail when they launch everywhere. Like Uber starting only in SF, we are launching exclusively on two to three high-traffic UK city pairs. This
+guarantees liquidity. Once dominated, we partner with smart lockers to act as Custody Nodes.
+8 / 10
+Structured trust wins.
+Couriers (DPD, RM)
+High Cost / Rigid
+PBuddy
+Low Cost / Fast & Secure
+Standard Post
+Low Cost / Very Slow
+Social Media / Gumtree
+Low Cost / Unsafe
+Info: Right now, you pay a premium for a traditional courier, which is trusted but expensive. Or you use Social Media, which is cheap but unsafe. PBuddy combines the
+speed and low cost of a peer network with the structured trust of a centralized courier.
+9 / 10
+Built to execute.
+Waseem Raza: Founder
+→ Product vision, marketplace design, and logistics workflow architecture.
+→ Successfully architected the PBuddy MVP, including the escrow and verification trust layers.
+→ Currently onboarding strategic advisors in logistics and marketplace growth.
+10 / 10
+Test The Prototype Please.
+Thank you!
+Info: Scan the QR code to experience PBuddy live.
