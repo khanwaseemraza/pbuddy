@@ -335,7 +335,7 @@ EPICS = [
         "ac": ["Insurance bound at checkout.", "Disputes resolvable with an evidence trail.",
                "Founder can run ops without DB access."],
         "children": [
-            {"code": "E6-S1", "summary": "Embedded insurance (stub -> Anansi)", "status": "To Do",
+            {"code": "E6-S1", "summary": "Embedded insurance (stub -> Anansi)", "status": "Done",
              "context": "Mandatory parcel cover at checkout; margin = premium charged - premium cost.",
              "ac": ["Policy bound per booking; INSURANCE_BOUND audit", "Stub first, real Anansi behind a flag"],
              "verify": "Checkout binds a policy and records the premium."},
