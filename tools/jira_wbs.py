@@ -339,7 +339,7 @@ EPICS = [
              "context": "Mandatory parcel cover at checkout; margin = premium charged - premium cost.",
              "ac": ["Policy bound per booking; INSURANCE_BOUND audit", "Stub first, real Anansi behind a flag"],
              "verify": "Checkout binds a policy and records the premium."},
-            {"code": "E6-S2", "summary": "Dispute flow", "status": "To Do",
+            {"code": "E6-S2", "summary": "Dispute flow", "status": "Done",
              "context": "Open/resolve disputes (release/refund/split) backed by handoff + photo evidence.",
              "ac": ["Dispute lifecycle with admin resolution", "Resolution drives the Stripe refund path"],
              "verify": "A disputed booking can be resolved to release/refund/split."},
