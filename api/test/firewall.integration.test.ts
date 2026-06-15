@@ -27,6 +27,11 @@ const fakeStripe = {
   },
   transfers: { create: async () => ({ id: `tr_${++stripeSeq}` }) },
   refunds: { create: async () => ({ id: `re_${++stripeSeq}`, status: 'succeeded' }) },
+  identity: {
+    verificationSessions: {
+      create: async () => ({ id: `vs_${++stripeSeq}`, client_secret: `vs_secret_${stripeSeq}`, url: 'https://verify.stripe.test', status: 'requires_input' }),
+    },
+  },
   webhooks: { constructEvent: (payload: Buffer) => JSON.parse(payload.toString()) },
 };
 
@@ -591,4 +596,71 @@ test('pickup is blocked without an open-box inspection', async () => {
   });
   assert.equal(pick.statusCode, 409);
   assert.equal(pick.json().error, 'open_box_required');
+});
+
+// ---- KYC via Stripe Identity (PBD-28) ------------------------------------
+
+test('KYC: start a session then the webhook flips kyc_status to verified', async () => {
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status)
+     VALUES ('kyc-user','+440000000020','unverified')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='unverified', kyc_session_id=NULL`,
+  );
+  const start = await app.inject({
+    method: 'POST', url: '/kyc/start', headers: { authorization: 'Bearer kyc-user' },
+  });
+  assert.equal(start.statusCode, 200, start.body);
+  assert.equal(start.json().kyc_status, 'pending');
+  const sessionId = start.json().session_id;
+  assert.match(sessionId, /^vs_/);
+
+  // Simulate Stripe's verified webhook.
+  const hook = await app.inject({
+    method: 'POST', url: '/stripe/webhook',
+    headers: { 'content-type': 'application/json' },
+    payload: JSON.stringify({
+      type: 'identity.verification_session.verified',
+      data: { object: { id: sessionId, status: 'verified' } },
+    }),
+  });
+  assert.equal(hook.statusCode, 200);
+  const u = (await pool.query(`SELECT kyc_status FROM users WHERE firebase_uid='kyc-user'`)).rows[0];
+  assert.equal(u.kyc_status, 'verified');
+});
+
+// ---- Reconciliation (PBD-32) ---------------------------------------------
+
+test('reconciliation reports by-state totals, revenue, and consistency checks', async () => {
+  const res = await app.inject({
+    method: 'GET', url: '/payments/reconciliation',
+    headers: { authorization: 'Bearer test-admin' },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  const body = res.json();
+  assert.equal(body.report, 'payments_reconciliation');
+  assert.ok(Array.isArray(body.by_state) && body.by_state.length > 0);
+  assert.ok('platform_revenue_pennies' in body.revenue);
+  assert.ok('travellers_paid_pennies' in body.revenue);
+  assert.ok(Array.isArray(body.inconsistencies));
+  assert.equal(typeof body.healthy, 'boolean');
+  // A booking taken through the FULL hand-off flow is consistent (released/released);
+  // it must never appear as an inconsistency.
+  const handoff = await app.inject({
+    method: 'GET', url: '/payments/reconciliation', headers: { authorization: 'Bearer test-admin' },
+  });
+  const releasedConsistent = (await pool.query(
+    `SELECT b.id FROM bookings b JOIN payments p ON p.booking_id=b.id
+      WHERE b.status='released' AND p.state='released' LIMIT 1`)).rows[0];
+  if (releasedConsistent) {
+    const flagged = handoff.json().inconsistencies.some((i: { booking_id: string }) => i.booking_id === releasedConsistent.id);
+    assert.equal(flagged, false);
+  }
+});
+
+test('reconciliation is admin-only', async () => {
+  const res = await app.inject({
+    method: 'GET', url: '/payments/reconciliation',
+    headers: { authorization: 'Bearer test-outsider' },
+  });
+  assert.equal(res.statusCode, 403);
 });

@@ -198,6 +198,52 @@ export async function paymentRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // ---- Reconciliation report (admin) ----
+  app.get('/payments/reconciliation', { preHandler: [authenticate, requireAdmin] }, async () => {
+    const byState = await pool.query(
+      `SELECT state,
+              count(*)                                                          AS count,
+              COALESCE(sum(gross_pennies), 0)::int                              AS gross_pennies,
+              COALESCE(sum(traveler_payout_pennies), 0)::int                    AS traveler_payout_pennies,
+              COALESCE(sum(platform_fee_pennies + escrow_fee_pennies), 0)::int  AS platform_fees_pennies
+         FROM payments GROUP BY state ORDER BY state`,
+    );
+    // Platform take on released bookings: fees + insurance margin.
+    const revenue = await pool.query(
+      `SELECT COALESCE(sum(platform_fee_pennies + escrow_fee_pennies
+              + GREATEST(0, insurance_cost_pennies - $1)), 0)::int AS platform_revenue_pennies,
+              COALESCE(sum(traveler_payout_pennies), 0)::int       AS travellers_paid_pennies
+         FROM payments WHERE state = 'released'`,
+      [config.insuranceCostPennies],
+    );
+    // Ledger/booking consistency checks.
+    const inconsistencies = await pool.query(
+      `SELECT b.id AS booking_id, b.status AS booking_status, p.state AS payment_state, reason FROM (
+         SELECT b.id, 'booking_released_payment_not' AS reason
+           FROM bookings b JOIN payments p ON p.booking_id = b.id
+          WHERE b.status = 'released' AND p.state <> 'released'
+         UNION ALL
+         SELECT b.id, 'payment_released_booking_not'
+           FROM bookings b JOIN payments p ON p.booking_id = b.id
+          WHERE p.state = 'released' AND b.status <> 'released'
+         UNION ALL
+         SELECT b.id, 'captured_but_booking_pre_pickup'
+           FROM bookings b JOIN payments p ON p.booking_id = b.id
+          WHERE p.state = 'captured' AND b.status NOT IN ('picked_up','delivered','disputed','released')
+       ) AS issues
+       JOIN bookings b ON b.id = issues.id
+       JOIN payments p ON p.booking_id = b.id
+       LIMIT 100`,
+    );
+    return {
+      report: 'payments_reconciliation',
+      by_state: byState.rows,
+      revenue: revenue.rows[0],
+      inconsistencies: inconsistencies.rows,
+      healthy: inconsistencies.rowCount === 0,
+    };
+  });
+
   // ---- Stripe webhook (encapsulated so it gets the raw body for signing) ----
   app.register(async (web) => {
     web.addContentTypeParser('application/json', { parseAs: 'buffer' }, (_req, body, done) =>
@@ -221,6 +267,20 @@ export async function paymentRoutes(app: FastifyInstance): Promise<void> {
           `UPDATE payments SET stripe_status = $2 WHERE stripe_payment_intent_id = $1`,
           [pi.id, pi.status ?? null],
         );
+      }
+      // Identity verification result -> flip the user's KYC status.
+      if (event.type.startsWith('identity.verification_session.')) {
+        const vs = event.data.object;
+        const kyc = event.type.endsWith('.verified')
+          ? 'verified'
+          : event.type.endsWith('.requires_input')
+            ? 'rejected'
+            : event.type.endsWith('.canceled')
+              ? 'unverified'
+              : null;
+        if (kyc) {
+          await pool.query(`UPDATE users SET kyc_status = $2 WHERE kyc_session_id = $1`, [vs.id, kyc]);
+        }
       }
       return reply.send({ received: true });
     });

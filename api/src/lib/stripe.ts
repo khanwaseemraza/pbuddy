@@ -19,6 +19,11 @@ export interface StripeLike {
   };
   transfers: { create(params: Stripe.TransferCreateParams): Promise<{ id: string }> };
   refunds: { create(params: Stripe.RefundCreateParams): Promise<{ id: string; status: string | null }> };
+  identity: {
+    verificationSessions: {
+      create(params: Stripe.Identity.VerificationSessionCreateParams): Promise<{ id: string; client_secret: string | null; url: string | null; status: string }>;
+    };
+  };
   webhooks: { constructEvent(payload: string | Buffer, sig: string, secret: string): Stripe.Event };
 }
 
@@ -97,6 +102,17 @@ export async function createTransfer(params: {
 
 export async function refundPaymentIntent(id: string): Promise<string | null> {
   return (await stripe().refunds.create({ payment_intent: id })).status;
+}
+
+export interface IdentitySessionResult { id: string; clientSecret: string | null; url: string | null }
+
+/** Start a Stripe Identity document verification for a user. */
+export async function createIdentitySession(userId: string): Promise<IdentitySessionResult> {
+  const vs = await stripe().identity.verificationSessions.create({
+    type: 'document',
+    metadata: { user_id: userId },
+  });
+  return { id: vs.id, clientSecret: vs.client_secret, url: vs.url };
 }
 
 export function constructWebhookEvent(payload: string | Buffer, signature: string): Stripe.Event {

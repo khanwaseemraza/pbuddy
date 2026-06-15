@@ -11,6 +11,7 @@ import { complianceRoutes } from './routes/compliance.ts';
 import { paymentRoutes } from './routes/payments.ts';
 import { handoffRoutes } from './routes/handoff.ts';
 import { reviewRoutes } from './routes/reviews.ts';
+import { kycRoutes } from './routes/kyc.ts';
 
 export function buildServer() {
   const app = Fastify({ logger: true });
@@ -25,6 +26,7 @@ export function buildServer() {
   app.register(paymentRoutes);
   app.register(handoffRoutes);
   app.register(reviewRoutes);
+  app.register(kycRoutes);
   return app;
 }
 
