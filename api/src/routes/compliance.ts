@@ -94,11 +94,18 @@ export async function complianceRoutes(app: FastifyInstance): Promise<void> {
                                           AS open_box_inspected,
               EXISTS (SELECT 1 FROM compliance_audit_log a
                         WHERE a.parcel_id = b.parcel_id AND a.event_type = 'PROHIBITED_ITEMS_ATTESTED')
-                                          AS prohibited_items_attested
+                                          AS prohibited_items_attested,
+              (ip.id IS NOT NULL)         AS insured,
+              ip.provider                 AS insurer,
+              ip.policy_ref,
+              ip.cover_pennies,
+              ip.premium_charged_pennies,
+              ip.status                   AS insurance_status
          FROM bookings b
          JOIN trips tr     ON tr.id = b.trip_id
          JOIN corridors co ON co.id = tr.corridor_id
          JOIN parcels p    ON p.id = b.parcel_id
+         LEFT JOIN insurance_policies ip ON ip.booking_id = b.id
         WHERE b.claimed_at BETWEEN $1 AND $2
         ORDER BY b.claimed_at DESC`,
       [from, to],

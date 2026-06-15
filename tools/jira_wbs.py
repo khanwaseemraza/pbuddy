@@ -343,7 +343,7 @@ EPICS = [
              "context": "Open/resolve disputes (release/refund/split) backed by handoff + photo evidence.",
              "ac": ["Dispute lifecycle with admin resolution", "Resolution drives the Stripe refund path"],
              "verify": "A disputed booking can be resolved to release/refund/split."},
-            {"code": "E6-S3", "summary": "Founder admin/ops console (Retool)", "status": "To Do",
+            {"code": "E6-S3", "summary": "Founder admin/ops console (Retool)", "status": "In Review",
              "context": "Disputes, payout overrides, reconciliation views for the founder.",
              "ac": ["Read/act on bookings, payments, disputes without direct DB access"],
              "verify": "Console performs a manual payout override end-to-end."},

@@ -492,6 +492,15 @@ test('funding binds an embedded insurance policy + INSURANCE_BOUND audit', async
   const audit = await pool.query(
     `SELECT 1 FROM compliance_audit_log WHERE booking_id=$1 AND event_type='INSURANCE_BOUND'`, [bookingId]);
   assert.equal(audit.rowCount, 1);
+
+  // The insurer export now reflects the bound policy for this booking (PBD-42).
+  const ins = await app.inject({
+    method: 'GET', url: '/compliance/export/insurer', headers: { authorization: 'Bearer test-admin' },
+  });
+  const row = ins.json().bookings.find((r: { booking_id: string }) => r.booking_id === bookingId);
+  assert.ok(row, 'booking should appear in the insurer export');
+  assert.equal(row.insured, true);
+  assert.equal(row.premium_charged_pennies, 199);
 });
 
 test('double funding is rejected', async () => {
