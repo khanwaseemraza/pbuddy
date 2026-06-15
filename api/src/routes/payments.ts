@@ -16,6 +16,7 @@ import { releaseCapacity } from '../services/caps.ts';
 import { mirrorBookingStatus } from '../lib/mirror.ts';
 import { writeAudit } from '../lib/audit.ts';
 import { generateLegCode } from '../services/handoff.ts';
+import { bindPolicy } from '../lib/insurance.ts';
 import {
   createConnectAccount,
   createOnboardingLink,
@@ -51,7 +52,10 @@ export async function paymentRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       const user = req.user!;
       const { rows } = await pool.query(
-        `SELECT id, sender_id, status, contribution_pennies FROM bookings WHERE id = $1`,
+        `SELECT b.id, b.sender_id, b.status, b.contribution_pennies, b.parcel_id,
+                p.declared_value_pennies
+           FROM bookings b JOIN parcels p ON p.id = b.parcel_id
+          WHERE b.id = $1`,
         [req.params.id],
       );
       const booking = rows[0];
@@ -92,6 +96,26 @@ export async function paymentRoutes(app: FastifyInstance): Promise<void> {
         [booking.id, pickup.qrToken, pickup.otpHash, dropoff.qrToken, dropoff.otpHash],
       );
       void mirrorBookingStatus(booking.id);
+
+      // Bind embedded parcel cover (the sender already paid the premium above).
+      if (charges.insuranceCostPennies > 0) {
+        const policy = bindPolicy({ bookingId: booking.id, coverPennies: booking.declared_value_pennies });
+        await pool.query(
+          `INSERT INTO insurance_policies
+             (booking_id, provider, policy_ref, cover_pennies, premium_cost_pennies,
+              premium_charged_pennies, terms_version, status)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,'active')`,
+          [booking.id, policy.provider, policy.policyRef, policy.coverPennies,
+           policy.premiumCostPennies, policy.premiumChargedPennies, policy.termsVersion],
+        );
+        await writeAudit({
+          eventType: 'INSURANCE_BOUND',
+          userId: user.id,
+          bookingId: booking.id,
+          parcelId: booking.parcel_id,
+          payload: { provider: policy.provider, policy_ref: policy.policyRef, cover_pennies: policy.coverPennies },
+        });
+      }
 
       return reply.code(201).send({
         booking_id: booking.id,

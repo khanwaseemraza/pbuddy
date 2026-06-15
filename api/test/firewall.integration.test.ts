@@ -476,6 +476,24 @@ test('full escrow happy path: fund -> capture -> payout', async () => {
   assert.match(payment.stripe_transfer_id, /^tr_/);
 });
 
+test('funding binds an embedded insurance policy + INSURANCE_BOUND audit', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 2000);
+  await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/fund`,
+    headers: { authorization: 'Bearer test-sender' }, payload: { with_insurance: true },
+  });
+  const policy = (await pool.query(
+    'SELECT provider, cover_pennies, premium_charged_pennies, status FROM insurance_policies WHERE booking_id=$1',
+    [bookingId])).rows[0];
+  assert.ok(policy, 'a policy should be bound');
+  assert.equal(policy.status, 'active');
+  assert.equal(policy.premium_charged_pennies, 199);
+  const audit = await pool.query(
+    `SELECT 1 FROM compliance_audit_log WHERE booking_id=$1 AND event_type='INSURANCE_BOUND'`, [bookingId]);
+  assert.equal(audit.rowCount, 1);
+});
+
 test('double funding is rejected', async () => {
   const tripId = await seedTripWithCap(5000);
   const bookingId = await makeBooking(tripId, 1500);
