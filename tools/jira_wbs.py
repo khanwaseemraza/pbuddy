@@ -380,7 +380,7 @@ EPICS = [
              "context": "Post trip, browse matches (map), bid/claim, open-box, scan, see contribution.",
              "ac": ["Full traveller journey reachable", "Cap-exceeded bids surface the cost-sharing message"],
              "verify": "Walk the traveller journey against the API."},
-            {"code": "E7-S5", "summary": "Live tracking via Firestore + FCM", "status": "To Do",
+            {"code": "E7-S5", "summary": "Live tracking via Firestore + FCM", "status": "In Review",
              "context": "Subscribe to booking_status; push on key transitions.",
              "ac": ["Status updates appear live", "Only participants can read the doc"],
              "verify": "Two devices see synchronized booking status."},
