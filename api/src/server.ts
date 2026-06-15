@@ -9,6 +9,8 @@ import { bookingRoutes } from './routes/bookings.ts';
 import { pricingRoutes } from './routes/pricing.ts';
 import { complianceRoutes } from './routes/compliance.ts';
 import { paymentRoutes } from './routes/payments.ts';
+import { handoffRoutes } from './routes/handoff.ts';
+import { reviewRoutes } from './routes/reviews.ts';
 
 export function buildServer() {
   const app = Fastify({ logger: true });
@@ -21,6 +23,8 @@ export function buildServer() {
   app.register(pricingRoutes);
   app.register(complianceRoutes);
   app.register(paymentRoutes);
+  app.register(handoffRoutes);
+  app.register(reviewRoutes);
   return app;
 }
 

@@ -15,6 +15,7 @@ import { canTransition, type BookingStatus } from '../services/bookingLifecycle.
 import { releaseCapacity } from '../services/caps.ts';
 import { mirrorBookingStatus } from '../lib/mirror.ts';
 import { writeAudit } from '../lib/audit.ts';
+import { generateLegCode } from '../services/handoff.ts';
 import {
   createConnectAccount,
   createOnboardingLink,
@@ -78,7 +79,18 @@ export async function paymentRoutes(app: FastifyInstance): Promise<void> {
         [booking.id, pi.id, charges.grossPennies, charges.platformFeePennies,
          charges.escrowFeePennies, charges.insuranceCostPennies, charges.travelerPayoutPennies],
       );
-      await pool.query(`UPDATE bookings SET status = 'funded', funded_at = now() WHERE id = $1`, [booking.id]);
+      // Generate the hand-off codes for this booking (shown by the sender/recipient,
+      // scanned/entered by the traveller). Stored: QR tokens + hashed OTPs.
+      const pickup = generateLegCode(booking.id);
+      const dropoff = generateLegCode(booking.id);
+      await pool.query(
+        `UPDATE bookings
+            SET status = 'funded', funded_at = now(),
+                pickup_qr_token = $2, pickup_otp_hash = $3,
+                dropoff_qr_token = $4, dropoff_otp_hash = $5
+          WHERE id = $1`,
+        [booking.id, pickup.qrToken, pickup.otpHash, dropoff.qrToken, dropoff.otpHash],
+      );
       void mirrorBookingStatus(booking.id);
 
       return reply.code(201).send({
@@ -86,6 +98,11 @@ export async function paymentRoutes(app: FastifyInstance): Promise<void> {
         client_secret: pi.clientSecret,
         payment_intent_id: pi.id,
         charges,
+        // The sender shows the pickup code and shares the dropoff code with the recipient.
+        handoff_codes: {
+          pickup_qr: pickup.qrToken, pickup_otp: pickup.otp,
+          dropoff_qr: dropoff.qrToken, dropoff_otp: dropoff.otp,
+        },
       });
     },
   );

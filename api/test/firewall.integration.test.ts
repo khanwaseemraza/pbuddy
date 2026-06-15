@@ -514,3 +514,81 @@ test('refunding an authorized booking cancels the hold and releases capacity', a
     'SELECT committed_pennies FROM trip_capacity_ledger WHERE trip_id=$1', [tripId])).rows[0].committed_pennies;
   assert.equal(committed, 0);
 });
+
+// ---- Hand-off: open-box -> pickup(capture) -> dropoff(payout) (PBD-34/35/36) ----
+
+async function fundBooking(bookingId: string) {
+  const res = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/fund`,
+    headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(res.statusCode, 201, res.body);
+  return res.json().handoff_codes as { pickup_otp: string; dropoff_otp: string; pickup_qr: string };
+}
+
+test('full hand-off: open-box -> pickup captures -> dropoff pays out, then rate', async () => {
+  // Ensure the traveller is a payout-ready Connect account.
+  await pool.query(
+    `UPDATE users SET stripe_connect_id='acct_test_handoff' WHERE firebase_uid='test-traveler'`);
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 2000);
+  const codes = await fundBooking(bookingId);
+
+  // Open-box gate.
+  const ob = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/open-box`,
+    headers: { authorization: 'Bearer test-traveler' },
+  });
+  assert.equal(ob.statusCode, 200, ob.body);
+
+  // Pickup: wrong code rejected, right code captures.
+  const bad = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/pickup`,
+    headers: { authorization: 'Bearer test-traveler' }, payload: { code: '000000' },
+  });
+  assert.equal(bad.statusCode, 401);
+  const pick = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/pickup`,
+    headers: { authorization: 'Bearer test-traveler' }, payload: { code: codes.pickup_otp },
+  });
+  assert.equal(pick.statusCode, 200, pick.body);
+  assert.equal(pick.json().status, 'picked_up');
+  let pay = (await pool.query('SELECT state FROM payments WHERE booking_id=$1', [bookingId])).rows[0];
+  assert.equal(pay.state, 'captured');
+
+  // Dropoff: pays out + releases.
+  const drop = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/dropoff`,
+    headers: { authorization: 'Bearer test-traveler' }, payload: { code: codes.dropoff_otp },
+  });
+  assert.equal(drop.statusCode, 200, drop.body);
+  assert.equal(drop.json().status, 'released');
+  assert.match(drop.json().transfer_id, /^tr_/);
+  pay = (await pool.query('SELECT state FROM payments WHERE booking_id=$1', [bookingId])).rows[0];
+  assert.equal(pay.state, 'released');
+  const bk = (await pool.query('SELECT status FROM bookings WHERE id=$1', [bookingId])).rows[0];
+  assert.equal(bk.status, 'released');
+
+  // Sender rates the traveller -> trust score updates.
+  const rate = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/reviews`,
+    headers: { authorization: 'Bearer test-sender' }, payload: { stars: 5, comment: 'Smooth!' },
+  });
+  assert.equal(rate.statusCode, 201, rate.body);
+  const trav = (await pool.query(
+    `SELECT trust_score, rating_count FROM users WHERE firebase_uid='test-traveler'`)).rows[0];
+  assert.equal(Number(trav.trust_score), 5);
+  assert.ok(Number(trav.rating_count) >= 1);
+});
+
+test('pickup is blocked without an open-box inspection', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 1800);
+  const codes = await fundBooking(bookingId);
+  const pick = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/pickup`,
+    headers: { authorization: 'Bearer test-traveler' }, payload: { code: codes.pickup_otp },
+  });
+  assert.equal(pick.statusCode, 409);
+  assert.equal(pick.json().error, 'open_box_required');
+});
