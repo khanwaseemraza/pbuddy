@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    name: API — typecheck, framing lint, tests
+    runs-on: ubuntu-latest
+
+    # Ephemeral Postgres for the DB-gated integration tests. startTestPg() uses
+    # DATABASE_URL when set (applying the migrations to it) instead of booting
+    # embedded-postgres.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pbuddy
+          POSTGRES_PASSWORD: pbuddy
+          POSTGRES_DB: pbuddy
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pbuddy -d pbuddy"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://pbuddy:pbuddy@localhost:5432/pbuddy
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run api:typecheck
+      - name: Framing lint (cost-sharing wording)
+        run: node api/scripts/banned-words.mjs
+      - name: Tests (unit + DB-gated integration)
+        run: npm run api:test
