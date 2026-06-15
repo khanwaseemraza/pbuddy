@@ -738,6 +738,27 @@ test('reconciliation reports by-state totals, revenue, and consistency checks', 
   }
 });
 
+test('admin overview + bookings list (admin-only)', async () => {
+  const ov = await app.inject({
+    method: 'GET', url: '/admin/overview', headers: { authorization: 'Bearer test-admin' },
+  });
+  assert.equal(ov.statusCode, 200, ov.body);
+  assert.ok('bookings_by_status' in ov.json());
+  assert.ok('queues' in ov.json());
+  assert.ok('platform_revenue_pennies' in ov.json().money);
+
+  const list = await app.inject({
+    method: 'GET', url: '/admin/bookings?limit=5', headers: { authorization: 'Bearer test-admin' },
+  });
+  assert.equal(list.statusCode, 200);
+  assert.ok(Array.isArray(list.json().bookings));
+
+  const denied = await app.inject({
+    method: 'GET', url: '/admin/overview', headers: { authorization: 'Bearer test-outsider' },
+  });
+  assert.equal(denied.statusCode, 403);
+});
+
 test('reconciliation is admin-only', async () => {
   const res = await app.inject({
     method: 'GET', url: '/payments/reconciliation',
