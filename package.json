@@ -4,8 +4,7 @@
   "private": true,
   "description": "PBuddy — cost-sharing peer-to-peer parcel delivery marketplace (UK)",
   "workspaces": [
-    "api",
-    "app"
+    "api"
   ],
   "scripts": {
     "api:dev": "npm --workspace api run dev",

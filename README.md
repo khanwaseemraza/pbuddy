@@ -47,6 +47,22 @@ npm run api:dev                     # start the API on :8080 against the local D
 npm run api:test                   # tests boot their OWN throwaway Postgres — no setup needed
 ```
 
+### Client app (Expo — iOS / Android / web)
+
+```bash
+cd app
+npm install
+cp .env.example .env                 # EXPO_PUBLIC_API_BASE_URL -> your API
+npm run web                          # open the web app (phone-OTP sign-in)
+npm run export:web                   # static web build -> app/dist
+```
+
+Phone-OTP sign-in uses Firebase. On **web** it works today (invisible reCAPTCHA);
+add a **test phone number** in Firebase Console → Authentication → Sign-in method →
+Phone to sign in without real SMS. **Native** (iOS/Android) phone auth needs a dev
+build with `@react-native-firebase` (follow-up). After sign-in the app calls the
+API with the Firebase ID token (see `app/app/home.tsx` loading `/corridors`).
+
 **Environments.** Local dev runs the API on your machine against the local Docker
 Postgres (free, offline). GCP is a separate environment: the API runs on **Cloud
 Run** against **Cloud SQL** — same code and migrations, different `DATABASE_URL`.

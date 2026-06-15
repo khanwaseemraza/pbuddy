@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "PBuddy",
+    "slug": "pbuddy",
+    "version": "0.0.1",
+    "scheme": "pbuddy",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-asset",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
