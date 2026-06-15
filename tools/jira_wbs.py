@@ -70,7 +70,7 @@ EPICS = [
                 "verify": "Open a PR; checks appear and pass/fail correctly.",
             },
             {
-                "code": "E1-S6", "summary": "Cloud Run + Cloud SQL provisioning (deferred)", "status": "To Do",
+                "code": "E1-S6", "summary": "Cloud Run + Cloud SQL provisioning (deferred)", "status": "Done",
                 "context": "Provision Cloud SQL (Postgres) and deploy the API to Cloud Run via Cloud Build. "
                            "Deferred per cost decision; everything is pre-wired.",
                 "ac": ["Cloud SQL instance + DB created; migrations applied",
@@ -384,7 +384,7 @@ EPICS = [
              "context": "Subscribe to booking_status; push on key transitions.",
              "ac": ["Status updates appear live", "Only participants can read the doc"],
              "verify": "Two devices see synchronized booking status."},
-            {"code": "E7-S6", "summary": "Web build + Firebase Hosting (pbuddy.co.uk)", "status": "To Do",
+            {"code": "E7-S6", "summary": "Web build + Firebase Hosting (pbuddy.co.uk)", "status": "In Review",
              "context": "Deploy the Expo web build to Firebase Hosting on the custom domain.",
              "ac": ["Web app served at pbuddy.co.uk", "/api/** rewrites to Cloud Run"],
              "verify": "Core sender flow works in-browser at the domain."},
