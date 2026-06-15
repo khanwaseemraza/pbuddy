@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { AddressPicker, type PickedAddress } from '../src/components/AddressPicker';
+import { GlassCard } from '../src/components/GlassCard';
 import { theme } from '../src/theme';
 
 export default function AddressDemo() {
@@ -19,7 +20,7 @@ export default function AddressDemo() {
       <AddressPicker label="Pickup" onChange={setPickup} />
       <AddressPicker label="Dropoff" onChange={setDropoff} />
 
-      <View style={{ backgroundColor: theme.card, borderRadius: 12, borderWidth: 1, borderColor: theme.border, padding: 16, marginTop: 8 }}>
+      <GlassCard style={{ marginTop: 8 }}>
         <Text style={{ color: theme.text, fontWeight: '700', marginBottom: 8 }}>Resolved</Text>
         <Text style={{ color: pickup ? theme.accent : theme.muted }}>
           Pickup: {pickup ? `${pickup.postcode} — ${pickup.address_line}` : 'not set'}
@@ -27,7 +28,7 @@ export default function AddressDemo() {
         <Text style={{ color: dropoff ? theme.accent : theme.muted, marginTop: 4 }}>
           Dropoff: {dropoff ? `${dropoff.postcode} — ${dropoff.address_line}` : 'not set'}
         </Text>
-      </View>
+      </GlassCard>
     </ScrollView>
   );
 }

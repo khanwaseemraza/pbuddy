@@ -5,6 +5,7 @@ import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from 'r
 import { useRouter } from 'expo-router';
 import type { ConfirmationResult } from 'firebase/auth';
 import { sendOtp } from '../src/lib/firebase';
+import { GlassCard } from '../src/components/GlassCard';
 import { theme } from '../src/theme';
 
 export default function SignIn() {
@@ -48,6 +49,7 @@ export default function SignIn() {
         Cost-sharing parcel delivery. Sign in with your phone.
       </Text>
 
+      <GlassCard>
       {!confirmation ? (
         <>
           <Label>Phone number</Label>
@@ -66,6 +68,7 @@ export default function SignIn() {
       )}
 
       {error ? <Text style={{ color: theme.danger, marginTop: 16 }}>{error}</Text> : null}
+      </GlassCard>
 
       {/* Invisible reCAPTCHA container (web only). */}
       {Platform.OS === 'web' ? <View nativeID="recaptcha-container" /> : null}

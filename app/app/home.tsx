@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import { Link, Redirect } from 'expo-router';
 import { useAuth } from '../src/auth/AuthProvider';
 import { api, ApiError, type Corridor } from '../src/lib/api';
+import { GlassCard } from '../src/components/GlassCard';
 import { theme } from '../src/theme';
 
 export default function Home() {
@@ -64,9 +65,9 @@ export default function Home() {
           data={corridors}
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => (
-            <View style={{ backgroundColor: theme.card, borderRadius: 12, borderWidth: 1, borderColor: theme.border, padding: 16, marginBottom: 12 }}>
+            <GlassCard style={{ marginBottom: 12 }}>
               <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600' }}>{item.display_name}</Text>
-            </View>
+            </GlassCard>
           )}
         />
       )}
