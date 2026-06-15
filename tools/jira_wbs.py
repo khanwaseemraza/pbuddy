@@ -176,7 +176,7 @@ EPICS = [
                 "verify": "Posting a non-GB postcode is rejected; valid postcode resolves to lat/lng.",
             },
             {
-                "code": "E2-S11", "summary": "User provisioning + real Firebase token verification", "status": "In Progress",
+                "code": "E2-S11", "summary": "User provisioning + real Firebase token verification", "status": "Done",
                 "context": "The auth middleware verifies a Firebase ID token but requires the users row to "
                            "already exist (403 user_not_provisioned). Add token verification without a service "
                            "account (verifyIdToken needs only the project id) and a POST /users/me that "
