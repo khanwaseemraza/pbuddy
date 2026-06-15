@@ -816,6 +816,88 @@ test('POST /users/me without any phone is rejected', async () => {
   assert.equal(r.json().error, 'phone_required');
 });
 
+// ---- Pro Buddy enablement (PBD-51/52/53/54) ------------------------------
+
+test('Pro upgrade is blocked without RTW, then succeeds with RTW + self-employed ack', async () => {
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status, is_traveler)
+     VALUES ('pro-candidate','+440000000030','verified',true)
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified', tier='casual_buddy', rtw_status='not_started'`,
+  );
+  const auth = { authorization: 'Bearer pro-candidate' };
+
+  // No RTW yet -> blocked.
+  const noRtw = await app.inject({ method: 'POST', url: '/pro/upgrade', headers: auth, payload: { self_employed_ack: true } });
+  assert.equal(noRtw.statusCode, 409);
+  assert.equal(noRtw.json().error, 'rtw_required');
+
+  // Verify RTW.
+  const rtw = await app.inject({ method: 'POST', url: '/pro/rtw/start', headers: auth });
+  assert.equal(rtw.statusCode, 200);
+  assert.equal(rtw.json().rtw_status, 'verified');
+
+  // RTW done but no ack -> blocked.
+  const noAck = await app.inject({ method: 'POST', url: '/pro/upgrade', headers: auth, payload: {} });
+  assert.equal(noAck.statusCode, 400);
+  assert.equal(noAck.json().error, 'self_employed_ack_required');
+
+  // With ack -> upgraded + audited.
+  const up = await app.inject({ method: 'POST', url: '/pro/upgrade', headers: auth, payload: { self_employed_ack: true } });
+  assert.equal(up.statusCode, 200, up.body);
+  assert.equal(up.json().tier, 'pro_buddy');
+  const tier = (await pool.query(`SELECT tier FROM users WHERE firebase_uid='pro-candidate'`)).rows[0].tier;
+  assert.equal(tier, 'pro_buddy');
+  const audit = await pool.query(
+    `SELECT 1 FROM compliance_audit_log a JOIN users u ON u.id=a.user_id
+      WHERE u.firebase_uid='pro-candidate' AND a.event_type='TIER_TRANSITION'`);
+  assert.equal(audit.rowCount, 1);
+});
+
+test('a student-visa user cannot pass RTW or become Pro', async () => {
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status, immigration_class)
+     VALUES ('student-pro','+440000000031','verified','student_visa')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified', immigration_class='student_visa'`,
+  );
+  const rtw = await app.inject({ method: 'POST', url: '/pro/rtw/start', headers: { authorization: 'Bearer student-pro' } });
+  assert.equal(rtw.statusCode, 403);
+  const up = await app.inject({
+    method: 'POST', url: '/pro/upgrade', headers: { authorization: 'Bearer student-pro' }, payload: { self_employed_ack: true },
+  });
+  assert.equal(up.statusCode, 403);
+});
+
+test('a Pro Buddy can bid above their journey cost (cap bypassed once gated)', async () => {
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status, is_traveler, stripe_connect_id)
+     VALUES ('pro-trav','+440000000032','verified',true,'acct_pro')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified'`,
+  );
+  await app.inject({ method: 'POST', url: '/pro/rtw/start', headers: { authorization: 'Bearer pro-trav' } });
+  await app.inject({ method: 'POST', url: '/pro/upgrade', headers: { authorization: 'Bearer pro-trav' }, payload: { self_employed_ack: true } });
+  const proId = (await pool.query(`SELECT id FROM users WHERE firebase_uid='pro-trav'`)).rows[0].id;
+
+  // A trip with a tiny £10 journey cost, by train.
+  const trip = (await pool.query(
+    `INSERT INTO trips (traveler_id, corridor_id, direction, transport_mode, depart_at,
+                        journey_cost_pennies, journey_cost_source)
+     VALUES ($1,$2,'outbound','train', now() + interval '2 days', 1000, 'self_declared') RETURNING id`,
+    [proId, corridorId])).rows[0].id;
+
+  const parcel = await app.inject({
+    method: 'POST', url: '/parcels', headers: { authorization: 'Bearer test-sender' },
+    payload: parcelPayload({ max_contribution_pennies: 8000 }),
+  });
+  // Bid £50 — far above the £10 journey cost. Casual would be rejected; Pro is allowed.
+  const bid = await app.inject({
+    method: 'POST', url: `/parcels/${parcel.json().id}/bids`,
+    headers: { authorization: 'Bearer pro-trav' },
+    payload: { trip_id: trip, bid_contribution_pennies: 5000 },
+  });
+  assert.equal(bid.statusCode, 201, bid.body);
+  assert.equal(bid.json().status, 'pending');
+});
+
 // ---- Sender flow read endpoints (PBD-46) ---------------------------------
 
 test('sender lists their parcels with bid counts and views bids; non-owner blocked', async () => {

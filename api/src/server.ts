@@ -15,6 +15,7 @@ import { kycRoutes } from './routes/kyc.ts';
 import { userRoutes } from './routes/users.ts';
 import { disputeRoutes } from './routes/disputes.ts';
 import { adminRoutes } from './routes/admin.ts';
+import { proRoutes } from './routes/pro.ts';
 
 export function buildServer() {
   const app = Fastify({ logger: true });
@@ -33,6 +34,7 @@ export function buildServer() {
   app.register(userRoutes);
   app.register(disputeRoutes);
   app.register(adminRoutes);
+  app.register(proRoutes);
   return app;
 }
 
