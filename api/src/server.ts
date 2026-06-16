@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import { config } from './config.ts';
+import { loggerOptions, genReqId } from './lib/logging.ts';
 import { healthRoutes } from './routes/health.ts';
 import { bidRoutes } from './routes/bids.ts';
 import { matchingRoutes } from './routes/matching.ts';
@@ -22,8 +23,15 @@ import { proRoutes } from './routes/pro.ts';
 export function buildServer() {
   // trustProxy so req.ip reads the real client from X-Forwarded-For behind
   // Cloud Run's front-end (otherwise every caller looks like the proxy IP and
-  // shares one rate-limit bucket).
-  const app = Fastify({ logger: true, trustProxy: true });
+  // shares one rate-limit bucket). Structured Cloud Logging config + a request
+  // id taken from the Cloud Trace header (see lib/logging.ts).
+  const app = Fastify({ logger: loggerOptions(), trustProxy: true, genReqId });
+
+  // Re-log unexpected (5xx) errors with their stack as the message so Cloud
+  // Error Reporting groups them. Client errors (4xx, 429) are left alone.
+  app.addHook('onError', async (req, _reply, err) => {
+    if ((err.statusCode ?? 500) >= 500) req.log.error(err.stack ?? err.message);
+  });
   // The web app calls the API cross-origin (Firebase Hosting -> Cloud Run). Auth
   // is via Bearer tokens (no cookies), so we just allow the known origins.
   app.register(cors, {
