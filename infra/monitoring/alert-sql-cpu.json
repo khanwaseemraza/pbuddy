@@ -1,0 +1,23 @@
+{
+  "displayName": "PBuddy Cloud SQL high CPU",
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "DB CPU > 90% for 5m",
+      "conditionThreshold": {
+        "filter": "resource.type=\"cloudsql_database\" AND resource.label.database_id=\"pbuddy-mvp:pbuddy-db\" AND metric.type=\"cloudsql.googleapis.com/database/cpu/utilization\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "perSeriesAligner": "ALIGN_MEAN"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0.9,
+        "duration": "300s",
+        "trigger": { "count": 1 }
+      }
+    }
+  ],
+  "notificationChannels": ["projects/pbuddy-mvp/notificationChannels/9894864067787609773"]
+}

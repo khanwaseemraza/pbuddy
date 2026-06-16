@@ -1,0 +1,23 @@
+{
+  "displayName": "PBuddy API uptime failed (/readyz)",
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "uptime check not passing",
+      "conditionThreshold": {
+        "filter": "resource.type=\"uptime_url\" AND metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND metric.label.check_id=\"pbuddy-api-readyz-xfgaGZPSi7s\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "perSeriesAligner": "ALIGN_FRACTION_TRUE"
+          }
+        ],
+        "comparison": "COMPARISON_LT",
+        "thresholdValue": 1,
+        "duration": "300s",
+        "trigger": { "count": 1 }
+      }
+    }
+  ],
+  "notificationChannels": ["projects/pbuddy-mvp/notificationChannels/9894864067787609773"]
+}
