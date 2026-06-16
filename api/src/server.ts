@@ -21,6 +21,7 @@ import { adminRoutes } from './routes/admin.ts';
 import { proRoutes } from './routes/pro.ts';
 import { legalRoutes } from './routes/legal.ts';
 import { deviceRoutes } from './routes/devices.ts';
+import { metricsRoutes } from './routes/metrics.ts';
 
 export function buildServer() {
   // trustProxy so req.ip reads the real client from X-Forwarded-For behind
@@ -73,6 +74,7 @@ export function buildServer() {
   app.register(proRoutes);
   app.register(legalRoutes);
   app.register(deviceRoutes);
+  app.register(metricsRoutes);
   return app;
 }
 

@@ -865,6 +865,27 @@ test('push: registering a device requires token + platform', async () => {
   assert.equal(bad.statusCode, 400);
 });
 
+// ---- Pilot metrics dashboard (PBD-58) ------------------------------------
+
+test('pilot metrics: admin-only, returns liquidity + unit economics + compliance', async () => {
+  const forbidden = await app.inject({
+    method: 'GET', url: '/metrics/pilot', headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(forbidden.statusCode, 403);
+
+  const res = await app.inject({
+    method: 'GET', url: '/metrics/pilot', headers: { authorization: 'Bearer test-admin' },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  const m = res.json();
+  assert.equal(m.report, 'pilot_metrics');
+  assert.ok('match_rate' in m.liquidity);
+  assert.ok('avg_time_to_match_seconds' in m.liquidity);
+  assert.ok('platform_revenue_pennies' in m.unit_economics);
+  assert.equal(m.compliance.breaches, 0);
+  assert.ok(Array.isArray(m.by_corridor));
+});
+
 // ---- Reconciliation (PBD-32) ---------------------------------------------
 
 test('reconciliation reports by-state totals, revenue, and consistency checks', async () => {
