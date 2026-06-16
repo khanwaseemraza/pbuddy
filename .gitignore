@@ -21,3 +21,7 @@ __pycache__/
 
 # Firebase deploy cache
 .firebase/
+
+# Expo prebuild (CNG) generated native projects
+app/ios/
+app/android/
