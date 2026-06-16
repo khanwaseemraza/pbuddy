@@ -469,7 +469,7 @@ EPICS = [
                     "A request with no/invalid attestation token is rejected"],
              "verify": "Sign-in from a non-attested client is blocked; a real device/browser still signs in.",
              "refs": ["recaptcha key 6Lfy... (project pbuddy-mvp)"]},
-            {"code": "E10-S2", "summary": "API rate limiting + Cloud Armor abuse protection", "status": "To Do",
+            {"code": "E10-S2", "summary": "API rate limiting + Cloud Armor abuse protection", "status": "Done",
              "context": "No throttling exists today. Add per-IP and per-uid rate limits on auth-adjacent and all "
                         "write endpoints, plus an edge WAF in front of Cloud Run.",
              "ac": ["@fastify/rate-limit (or equivalent) caps write/bid/payment endpoints per uid + per IP",
