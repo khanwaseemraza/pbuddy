@@ -41,6 +41,15 @@ const fakeStripe = {
   },
 };
 
+// Fake FCM messaging — capture multicast sends so push can be asserted.
+const pushSends: { tokens: string[]; notification: { title: string; body: string } }[] = [];
+const fakeMessaging = {
+  sendEachForMulticast: async (msg: { tokens: string[]; notification: { title: string; body: string } }) => {
+    pushSends.push(msg);
+    return { successCount: msg.tokens.length, failureCount: 0 };
+  },
+};
+
 before(async () => {
   tpg = await startTestPg();
   process.env.DATABASE_URL = tpg.connectionString;
@@ -53,6 +62,8 @@ before(async () => {
   ({ reserveCapacity } = await import('../src/services/caps.ts'));
   const { setStripeForTests } = await import('../src/lib/stripe.ts');
   setStripeForTests(fakeStripe as never);
+  const { setMessagingForTests } = await import('../src/lib/push.ts');
+  setMessagingForTests(fakeMessaging as never);
   const { buildServer } = await import('../src/server.ts');
   app = buildServer();
   await app.ready();
@@ -818,6 +829,40 @@ test('consent: provisioning with accept_legal records the version + an audit ent
     [res.json().id],
   );
   assert.equal(audit.rows[0].n, 1);
+});
+
+// ---- Push notifications (PBD-72) -----------------------------------------
+
+test('push: a funded booking notifies only the traveller’s registered device', async () => {
+  pushSends.length = 0;
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 2000);
+
+  // Both sides register a device; 'funded' should reach the traveller only.
+  for (const [who, tok] of [['test-traveler', 'tok-trav-1'], ['test-sender', 'tok-send-1']]) {
+    const reg = await app.inject({
+      method: 'POST', url: '/devices/register',
+      headers: { authorization: `Bearer ${who}` }, payload: { token: tok, platform: 'android' },
+    });
+    assert.equal(reg.statusCode, 201, reg.body);
+  }
+
+  await pool.query(`UPDATE bookings SET status='funded', funded_at=now() WHERE id=$1`, [bookingId]);
+  const { sendBookingPush } = await import('../src/lib/push.ts');
+  const sent = await sendBookingPush(bookingId);
+
+  assert.equal(sent, 1);
+  assert.equal(pushSends.length, 1);
+  assert.deepEqual(pushSends[0].tokens, ['tok-trav-1']);
+  assert.match(pushSends[0].notification.title, /funded/i);
+});
+
+test('push: registering a device requires token + platform', async () => {
+  const bad = await app.inject({
+    method: 'POST', url: '/devices/register',
+    headers: { authorization: 'Bearer test-sender' }, payload: { token: 'x' },
+  });
+  assert.equal(bad.statusCode, 400);
 });
 
 // ---- Reconciliation (PBD-32) ---------------------------------------------

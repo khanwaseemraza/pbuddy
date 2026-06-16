@@ -5,6 +5,7 @@
 // failed init so it never slows or breaks a request.
 import { config } from '../config.ts';
 import { pool } from '../db.ts';
+import { sendBookingPush } from './push.ts';
 
 let firestore: import('firebase-admin/firestore').Firestore | null = null;
 let disabled = false;
@@ -31,6 +32,9 @@ async function getFirestore() {
  * so the security rules (participant-only read) can authorise. Best-effort.
  */
 export async function mirrorBookingStatus(bookingId: string): Promise<void> {
+  // Out-of-app push runs on every transition, independent of the Firestore
+  // mirror flag (both are best-effort and never block the request path).
+  void sendBookingPush(bookingId);
   if (config.disableFirestoreMirror) return;
   try {
     const fs = await getFirestore();

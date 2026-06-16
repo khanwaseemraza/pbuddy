@@ -10,6 +10,9 @@ export const config = {
   // Firestore status mirror is best-effort; disable it (e.g. in tests / when no
   // credentials) so the API never blocks on it. Postgres remains source of truth.
   disableFirestoreMirror: process.env.DISABLE_FIRESTORE_MIRROR === '1',
+  // FCM push is best-effort too (needs credentials / device tokens). Off-switch
+  // for environments where it shouldn't fire.
+  disablePush: process.env.DISABLE_PUSH === '1',
   // Admins allowed to pull compliance evidence exports (Firebase UID allowlist).
   adminUids: (process.env.ADMIN_FIREBASE_UIDS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   // Price-suggestion bands (pence). A fair "contribution to costs" anchor for the
