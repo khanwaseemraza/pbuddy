@@ -507,7 +507,7 @@ EPICS = [
                     "DR runbook (RPO/RTO, restore steps) documented in infra/"],
              "verify": "Restore the latest backup to a scratch instance; migrations + a smoke query pass.",
              "refs": ["infra/cloudsql.sh"]},
-            {"code": "E10-S7", "summary": "Legal pages live + consent capture", "status": "To Do",
+            {"code": "E10-S7", "summary": "Legal pages live + consent capture", "status": "Done",
              "context": "Surface the versioned legal copy as real pages and capture consent at sign-up: Terms, "
                         "Privacy, Prohibited Items, and the cost-sharing explainer (framing-clean).",
              "ac": ["T&Cs, Privacy, Prohibited Items, cost-sharing explainer reachable from the app/site",
