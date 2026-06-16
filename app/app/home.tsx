@@ -19,8 +19,9 @@ export default function Home() {
       try {
         const token = await getToken();
         if (!token) return;
-        // Provision the user row from the verified token on first load, then load data.
-        await api.post('/users/me', token);
+        // Provision the user row on first load, then load data. Send the phone
+        // from the Firebase user as a fallback (some ID tokens omit phone_number).
+        await api.post('/users/me', token, { phone: user.phoneNumber });
         const data = await api.get<{ corridors: Corridor[] }>('/corridors', token);
         setCorridors(data.corridors);
       } catch (e) {
