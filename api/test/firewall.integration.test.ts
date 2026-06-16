@@ -785,6 +785,41 @@ test('webhook: a replayed event id is a no-op (idempotent)', async () => {
   );
 });
 
+// ---- Legal pages + consent (PBD-68) --------------------------------------
+
+test('legal: lists the active documents and serves a body', async () => {
+  const list = await app.inject({ method: 'GET', url: '/legal' });
+  assert.equal(list.statusCode, 200);
+  const keys = list.json().documents.map((d: { key: string }) => d.key).sort();
+  assert.deepEqual(keys, ['cost_sharing.explainer', 'privacy', 'prohibited_items', 'terms']);
+
+  const terms = await app.inject({ method: 'GET', url: '/legal/terms' });
+  assert.equal(terms.statusCode, 200);
+  assert.equal(terms.json().key, 'terms');
+  assert.ok(terms.json().body.length > 0);
+
+  const missing = await app.inject({ method: 'GET', url: '/legal/nope' });
+  assert.equal(missing.statusCode, 404);
+});
+
+test('consent: provisioning with accept_legal records the version + an audit entry', async () => {
+  const res = await app.inject({
+    method: 'POST', url: '/users/me',
+    headers: { authorization: 'Bearer consent-user' },
+    payload: { phone: '+440000000099', accept_legal: true },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  assert.equal(res.json().legal_version, 1);
+  assert.ok(res.json().legal_accepted_at);
+
+  const audit = await pool.query(
+    `SELECT count(*)::int AS n FROM compliance_audit_log
+      WHERE event_type = 'CONSENT_RECORDED' AND user_id = $1`,
+    [res.json().id],
+  );
+  assert.equal(audit.rows[0].n, 1);
+});
+
 // ---- Reconciliation (PBD-32) ---------------------------------------------
 
 test('reconciliation reports by-state totals, revenue, and consistency checks', async () => {

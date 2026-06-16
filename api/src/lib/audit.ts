@@ -15,7 +15,8 @@ export type AuditEventType =
   | 'ROUTE_VALIDATED'
   | 'INSURANCE_BOUND'
   | 'TAX_DISCLOSURE_SHOWN'
-  | 'TIER_TRANSITION';
+  | 'TIER_TRANSITION'
+  | 'CONSENT_RECORDED';
 
 export interface AuditEntry {
   eventType: AuditEventType;

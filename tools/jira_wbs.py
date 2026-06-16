@@ -491,7 +491,7 @@ EPICS = [
                     "Secrets remain in Secret Manager / ~/.pbuddy-secrets.env (never in the repo)",
                     "pbuddy-run@ SA scoped to only Cloud SQL client + Firestore + required secrets"],
              "verify": "Old credentials no longer authenticate; deploy + app still work with rotated secrets."},
-            {"code": "E10-S5", "summary": "Observability: structured logs, error tracking, uptime + alerts", "status": "To Do",
+            {"code": "E10-S5", "summary": "Observability: structured logs, error tracking, uptime + alerts", "status": "Done",
              "context": "Add structured request logging, error reporting, an uptime check, and alert policies so "
                         "failures page someone instead of being discovered by users.",
              "ac": ["JSON structured logs with request id + uid (no PII/secrets) in Cloud Logging",

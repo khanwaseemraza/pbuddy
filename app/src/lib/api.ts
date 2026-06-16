@@ -22,10 +22,33 @@ async function request<T>(path: string, token: string, init?: RequestInit): Prom
   return body as T;
 }
 
+async function requestPublic<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`);
+  const body = res.status === 204 ? null : await res.json().catch(() => null);
+  if (!res.ok) throw new ApiError(res.status, body);
+  return body as T;
+}
+
 export const api = {
   get: <T>(path: string, token: string) => request<T>(path, token),
   post: <T>(path: string, token: string, data?: unknown) =>
     request<T>(path, token, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),
+  // Unauthenticated GET — used for the public legal pages.
+  getPublic: <T>(path: string) => requestPublic<T>(path),
+};
+
+export interface LegalDoc {
+  key: string;
+  version: number;
+  body: string;
+}
+
+// Human labels for the legal document keys.
+export const LEGAL_TITLES: Record<string, string> = {
+  terms: 'Terms of Service',
+  privacy: 'Privacy Policy',
+  prohibited_items: 'Prohibited Items',
+  'cost_sharing.explainer': 'How cost-sharing works',
 };
 
 export interface Corridor {

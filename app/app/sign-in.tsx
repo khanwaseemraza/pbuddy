@@ -2,7 +2,7 @@
 // uses Firebase's invisible reCAPTCHA (the container below maps to a DOM node).
 import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Link, useRouter, type Href } from 'expo-router';
 import type { ConfirmationResult } from 'firebase/auth';
 import { sendOtp } from '../src/lib/firebase';
 import { GlassCard } from '../src/components/GlassCard';
@@ -69,6 +69,14 @@ export default function SignIn() {
 
       {error ? <Text style={{ color: theme.danger, marginTop: 16 }}>{error}</Text> : null}
       </GlassCard>
+
+      {/* Consent: signing in accepts the legal bundle (recorded server-side). */}
+      <Text style={{ color: theme.muted, fontSize: 13, marginTop: 20, lineHeight: 19 }}>
+        By continuing you agree to PBuddy&apos;s{' '}
+        <Link href={'/legal/terms' as Href} style={{ color: theme.accent }}>Terms</Link>,{' '}
+        <Link href={'/legal/privacy' as Href} style={{ color: theme.accent }}>Privacy Policy</Link>, and{' '}
+        <Link href={'/legal/prohibited_items' as Href} style={{ color: theme.accent }}>Prohibited Items</Link> policy.
+      </Text>
 
       {/* Invisible reCAPTCHA container (web only). */}
       {Platform.OS === 'web' ? <View nativeID="recaptcha-container" /> : null}

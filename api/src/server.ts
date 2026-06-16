@@ -19,6 +19,7 @@ import { userRoutes } from './routes/users.ts';
 import { disputeRoutes } from './routes/disputes.ts';
 import { adminRoutes } from './routes/admin.ts';
 import { proRoutes } from './routes/pro.ts';
+import { legalRoutes } from './routes/legal.ts';
 
 export function buildServer() {
   // trustProxy so req.ip reads the real client from X-Forwarded-For behind
@@ -69,6 +70,7 @@ export function buildServer() {
   app.register(disputeRoutes);
   app.register(adminRoutes);
   app.register(proRoutes);
+  app.register(legalRoutes);
   return app;
 }
 

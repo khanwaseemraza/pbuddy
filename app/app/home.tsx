@@ -21,7 +21,8 @@ export default function Home() {
         if (!token) return;
         // Provision the user row on first load, then load data. Send the phone
         // from the Firebase user as a fallback (some ID tokens omit phone_number).
-        await api.post('/users/me', token, { phone: user.phoneNumber });
+        // accept_legal records consent to the current legal bundle on first sign-up.
+        await api.post('/users/me', token, { phone: user.phoneNumber, accept_legal: true });
         const data = await api.get<{ corridors: Corridor[] }>('/corridors', token);
         setCorridors(data.corridors);
       } catch (e) {
@@ -44,9 +45,12 @@ export default function Home() {
           <Text style={{ color: theme.accent, fontSize: 26, fontWeight: '800' }}>PBuddy</Text>
           <Text style={{ color: theme.muted, marginTop: 2 }}>{user.phoneNumber}</Text>
         </View>
-        <Pressable onPress={signOut}>
-          <Text style={{ color: theme.muted }}>Sign out</Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', gap: 16 }}>
+          <Link href={'/legal' as Href} style={{ color: theme.muted }}>Legal</Link>
+          <Pressable onPress={signOut}>
+            <Text style={{ color: theme.muted }}>Sign out</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={{ flexDirection: 'row', gap: 12, marginTop: 28 }}>
