@@ -476,7 +476,7 @@ EPICS = [
                     "Cloud Armor policy fronts the Cloud Run service (or the LB) with sane defaults",
                     "Exceeding the limit returns 429 with Retry-After; limits are configurable"],
              "verify": "A burst of requests past the limit returns 429; normal usage is unaffected."},
-            {"code": "E10-S3", "summary": "Stripe webhook signature verification + idempotency (prod)", "status": "To Do",
+            {"code": "E10-S3", "summary": "Stripe webhook signature verification + idempotency (prod)", "status": "In Review",
              "context": "Money moves only in response to webhooks. Harden the prod path: verify the Stripe-Signature "
                         "header with the endpoint secret, enforce idempotency, and reject replays.",
              "ac": ["Every webhook verifies Stripe-Signature against STRIPE_WEBHOOK_SECRET (raw body)",
