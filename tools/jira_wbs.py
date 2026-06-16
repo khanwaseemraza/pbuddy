@@ -537,7 +537,7 @@ EPICS = [
             "Apps are accepted into TestFlight and Play closed testing.",
         ],
         "children": [
-            {"code": "E11-S1", "summary": "EAS dev build + @react-native-firebase native phone auth", "status": "To Do",
+            {"code": "E11-S1", "summary": "EAS dev build + @react-native-firebase native phone auth", "status": "In Review",
              "context": "Add the native Firebase config plugin and EAS build profiles; wire native phone-OTP via "
                         "@react-native-firebase/auth (the JS SDK path is web-only).",
              "ac": ["eas.json profiles (dev/preview/prod); GoogleService-Info.plist + google-services.json wired",
@@ -545,7 +545,7 @@ EPICS = [
                     "AUTH works on a physical iOS and Android device"],
              "verify": "Install the dev build on a device; sign in with a real number; /corridors loads.",
              "refs": ["app/app.json", "app/src/lib/firebase.ts"]},
-            {"code": "E11-S2", "summary": "Push notifications (FCM Android + APNs iOS)", "status": "To Do",
+            {"code": "E11-S2", "summary": "Push notifications (FCM Android + APNs iOS)", "status": "In Review",
              "context": "Deliver push on key booking transitions (bid received, accepted, picked up, delivered), "
                         "completing the deferred part of the live-tracking story (E7-S5).",
              "ac": ["Device FCM/APNs token registered against the user server-side",
@@ -553,7 +553,7 @@ EPICS = [
                     "Tapping a notification deep-links to the booking"],
              "verify": "A status change on one device pushes a notification to the counterparty device.",
              "refs": ["api/src/lib/mirror.ts", "api/src/services/bookingLifecycle.ts"]},
-            {"code": "E11-S3", "summary": "Native AddressPicker + maps parity", "status": "To Do",
+            {"code": "E11-S3", "summary": "Native AddressPicker + maps parity", "status": "In Review",
              "context": "Ensure postcode lookup + map pin (MapLibre/OSM) render correctly on native, matching web.",
              "ac": ["AddressPicker validates GB postcodes and drops a correct pin on iOS + Android",
                     "Location permission flow handled gracefully"],
