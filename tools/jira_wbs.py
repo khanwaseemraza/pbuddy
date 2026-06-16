@@ -515,7 +515,7 @@ EPICS = [
                     "Pages pass the framing lint (no fee/earnings on cost-sharing path)"],
              "verify": "Sign-up writes the consent record; pages render on web; framing lint clean.",
              "refs": ["db/migrations/0002_seed.sql (legal_copy)", "api/scripts/banned-words.mjs"]},
-            {"code": "E10-S8", "summary": "Load & resilience test at pilot scale + SLOs", "status": "To Do",
+            {"code": "E10-S8", "summary": "Load & resilience test at pilot scale + SLOs", "status": "Done",
              "context": "Validate the system holds up at pilot concurrency and define the SLOs we alert on.",
              "ac": ["k6/artillery scenario covers sign-in, post, bid/accept, escrow at pilot concurrency",
                     "p95 latency + error budget SLOs defined and met against a staging deploy",
