@@ -39,6 +39,17 @@ a few minutes. Subsequent JS changes hot-reload like normal.
   registers it (`POST /devices/register`). Booking transitions then push to the device
   (see `api/src/lib/push.ts`). The API runtime SA has FCM send permission.
 
+## Android store builds (Play Store — EAS)
+A Play Store account is available, so you can build a Play-uploadable bundle:
+```bash
+cd app
+npm i -g eas-cli && eas login          # free Expo account
+eas build --profile production --platform android   # -> signed .aab (EAS keystore)
+eas submit  --profile production --platform android # uploads to Play internal track
+```
+Profiles live in `app/eas.json` (development = dev client APK, preview = internal APK,
+production = signed AAB). This is the start of epic **E18 (Android Production Launch)**.
+
 ## Notes
 - **Expo Go will NOT work** (it can't load native Firebase modules). Use `expo run:*`.
 - `google-services.json` / `GoogleService-Info.plist` are Firebase client config (not
