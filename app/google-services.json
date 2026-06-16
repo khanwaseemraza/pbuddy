@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "413412903611-m6suu55a1hau38mii40kcarf6oaetogd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "uk.co.pbuddy",
+            "certificate_hash": "4374aba75118a4d11df7c5db5f5bd62d2d44929e"
+          }
+        },
+        {
           "client_id": "413412903611-sosuht2quef6h39in6ij9h39dts7rtqf.apps.googleusercontent.com",
           "client_type": 3
         }
