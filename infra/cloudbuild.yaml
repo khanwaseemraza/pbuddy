@@ -23,7 +23,7 @@ steps:
       - --allow-unauthenticated
       - --service-account=pbuddy-run@$PROJECT_ID.iam.gserviceaccount.com
       - --add-cloudsql-instances=$PROJECT_ID:${_REGION}:pbuddy-db
-      - --set-secrets=DATABASE_URL=DATABASE_URL:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest
+      - --set-secrets=DATABASE_URL=DATABASE_URL:latest,STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest
       - --set-env-vars=FIREBASE_PROJECT_ID=$PROJECT_ID,AUTH_DEV_BYPASS=0,APP_BASE_URL=https://pbuddy-mvp.web.app
 
 images: ['${_IMAGE}']
