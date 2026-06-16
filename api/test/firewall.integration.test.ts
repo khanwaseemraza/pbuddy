@@ -32,7 +32,13 @@ const fakeStripe = {
       create: async () => ({ id: `vs_${++stripeSeq}`, client_secret: `vs_secret_${stripeSeq}`, url: 'https://verify.stripe.test', status: 'requires_input' }),
     },
   },
-  webhooks: { constructEvent: (payload: Buffer) => JSON.parse(payload.toString()) },
+  // Mimics Stripe's verifier: a 'bad' signature throws, anything else parses.
+  webhooks: {
+    constructEvent: (payload: Buffer, sig: string) => {
+      if (sig === 'bad') throw new Error('signature mismatch');
+      return JSON.parse(payload.toString());
+    },
+  },
 };
 
 before(async () => {
@@ -41,6 +47,7 @@ before(async () => {
   process.env.AUTH_DEV_BYPASS = '1';
   process.env.DISABLE_FIRESTORE_MIRROR = '1'; // best-effort mirror off in tests
   process.env.ADMIN_FIREBASE_UIDS = 'test-admin';
+  process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test'; // exercise the signed webhook path
   ({ pool } = await import('../src/db.ts'));
   ({ reserveCapacity } = await import('../src/services/caps.ts'));
   const { setStripeForTests } = await import('../src/lib/stripe.ts');
@@ -704,11 +711,12 @@ test('KYC: start a session then the webhook flips kyc_status to verified', async
   const sessionId = start.json().session_id;
   assert.match(sessionId, /^vs_/);
 
-  // Simulate Stripe's verified webhook.
+  // Simulate Stripe's verified webhook (signed).
   const hook = await app.inject({
     method: 'POST', url: '/stripe/webhook',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', 'stripe-signature': 'test' },
     payload: JSON.stringify({
+      id: 'evt_kyc_verified_1',
       type: 'identity.verification_session.verified',
       data: { object: { id: sessionId, status: 'verified' } },
     }),
@@ -716,6 +724,64 @@ test('KYC: start a session then the webhook flips kyc_status to verified', async
   assert.equal(hook.statusCode, 200);
   const u = (await pool.query(`SELECT kyc_status FROM users WHERE firebase_uid='kyc-user'`)).rows[0];
   assert.equal(u.kyc_status, 'verified');
+});
+
+test('webhook: rejects a missing or invalid signature when a secret is set', async () => {
+  const event = JSON.stringify({
+    id: 'evt_forged_1',
+    type: 'identity.verification_session.verified',
+    data: { object: { id: 'vs_forged', status: 'verified' } },
+  });
+  // No stripe-signature header -> rejected before any processing.
+  const missing = await app.inject({
+    method: 'POST', url: '/stripe/webhook',
+    headers: { 'content-type': 'application/json' }, payload: event,
+  });
+  assert.equal(missing.statusCode, 400);
+  assert.equal(missing.json().error, 'missing_signature');
+
+  // Present but invalid signature -> rejected.
+  const bad = await app.inject({
+    method: 'POST', url: '/stripe/webhook',
+    headers: { 'content-type': 'application/json', 'stripe-signature': 'bad' }, payload: event,
+  });
+  assert.equal(bad.statusCode, 400);
+  assert.equal(bad.json().error, 'invalid_signature');
+});
+
+test('webhook: a replayed event id is a no-op (idempotent)', async () => {
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status, kyc_session_id)
+     VALUES ('kyc-replay','+440000000021','pending','vs_replay')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='pending', kyc_session_id='vs_replay'`,
+  );
+  const deliver = () => app.inject({
+    method: 'POST', url: '/stripe/webhook',
+    headers: { 'content-type': 'application/json', 'stripe-signature': 'test' },
+    payload: JSON.stringify({
+      id: 'evt_replay_1',
+      type: 'identity.verification_session.verified',
+      data: { object: { id: 'vs_replay', status: 'verified' } },
+    }),
+  });
+
+  const first = await deliver();
+  assert.equal(first.statusCode, 200);
+  assert.equal(first.json().duplicate, undefined);
+  assert.equal(
+    (await pool.query(`SELECT kyc_status FROM users WHERE firebase_uid='kyc-replay'`)).rows[0].kyc_status,
+    'verified',
+  );
+
+  // Tamper with state, then replay the SAME event id: it must not re-run.
+  await pool.query(`UPDATE users SET kyc_status='unverified' WHERE firebase_uid='kyc-replay'`);
+  const second = await deliver();
+  assert.equal(second.statusCode, 200);
+  assert.equal(second.json().duplicate, true);
+  assert.equal(
+    (await pool.query(`SELECT kyc_status FROM users WHERE firebase_uid='kyc-replay'`)).rows[0].kyc_status,
+    'unverified',
+  );
 });
 
 // ---- Reconciliation (PBD-32) ---------------------------------------------

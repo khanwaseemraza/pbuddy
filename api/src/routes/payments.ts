@@ -275,15 +275,42 @@ export async function paymentRoutes(app: FastifyInstance): Promise<void> {
     );
     web.post('/stripe/webhook', async (req, reply) => {
       const sig = req.headers['stripe-signature'] as string | undefined;
-      let event: { type: string; data: { object: { id: string; status?: string } } };
-      try {
-        event =
-          config.stripeWebhookSecret && sig
-            ? (constructWebhookEvent(req.body as Buffer, sig) as never)
-            : JSON.parse((req.body as Buffer).toString());
-      } catch {
-        return reply.code(400).send({ error: 'invalid_signature' });
+      let event: { id: string; type: string; data: { object: { id: string; status?: string } } };
+      // Webhooks move money and flip KYC, so an unsigned/forged event must never
+      // be processed in production. If a signing secret is configured we ALWAYS
+      // verify (and reject a missing/invalid signature). The unsigned JSON path
+      // exists only for local dev/tests (AUTH_DEV_BYPASS); a prod deploy without
+      // a secret refuses to process rather than trusting the body.
+      if (config.stripeWebhookSecret) {
+        if (!sig) return reply.code(400).send({ error: 'missing_signature' });
+        try {
+          event = constructWebhookEvent(req.body as Buffer, sig) as never;
+        } catch {
+          return reply.code(400).send({ error: 'invalid_signature' });
+        }
+      } else if (config.authDevBypass) {
+        try {
+          event = JSON.parse((req.body as Buffer).toString());
+        } catch {
+          return reply.code(400).send({ error: 'invalid_payload' });
+        }
+      } else {
+        req.log.error('stripe webhook received but STRIPE_WEBHOOK_SECRET is not set');
+        return reply.code(500).send({ error: 'webhook_not_configured' });
       }
+
+      // Idempotency: record the event id first; a repeat delivery (Stripe retries,
+      // or a replayed event within the signature tolerance) is a no-op so no side
+      // effect ever runs twice.
+      if (event.id) {
+        const seen = await pool.query(
+          `INSERT INTO processed_webhook_events (event_id, event_type)
+           VALUES ($1, $2) ON CONFLICT (event_id) DO NOTHING`,
+          [event.id, event.type],
+        );
+        if (seen.rowCount === 0) return reply.send({ received: true, duplicate: true });
+      }
+
       // Keep the payment row loosely in sync with Stripe's view.
       if (event.type.startsWith('payment_intent.')) {
         const pi = event.data.object;
