@@ -31,4 +31,11 @@ export const config = {
   corsOrigins: (process.env.CORS_ORIGINS ??
     'https://pbuddy-mvp.web.app,https://pbuddy-mvp.firebaseapp.com,https://pbuddy.co.uk,https://www.pbuddy.co.uk,http://localhost:8081,http://localhost:19006')
     .split(',').map((s) => s.trim()).filter(Boolean),
+  // Rate limiting (abuse / brute-force protection). Keyed per caller (bearer
+  // token if present, else client IP) over a sliding window. Generous by default
+  // so normal use is never throttled; tune via env. Set RATE_LIMIT_DISABLED=1 to
+  // turn it off (e.g. the integration suite makes many rapid requests).
+  rateLimitEnabled: process.env.RATE_LIMIT_DISABLED !== '1',
+  rateLimitMax: Number(process.env.RATE_LIMIT_MAX ?? 600),
+  rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000),
 } as const;

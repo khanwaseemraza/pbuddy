@@ -48,6 +48,7 @@ before(async () => {
   process.env.DISABLE_FIRESTORE_MIRROR = '1'; // best-effort mirror off in tests
   process.env.ADMIN_FIREBASE_UIDS = 'test-admin';
   process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test'; // exercise the signed webhook path
+  process.env.RATE_LIMIT_DISABLED = '1'; // this suite makes many rapid requests
   ({ pool } = await import('../src/db.ts'));
   ({ reserveCapacity } = await import('../src/services/caps.ts'));
   const { setStripeForTests } = await import('../src/lib/stripe.ts');

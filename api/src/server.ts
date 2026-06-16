@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import { config } from './config.ts';
 import { healthRoutes } from './routes/health.ts';
 import { bidRoutes } from './routes/bids.ts';
@@ -19,13 +20,31 @@ import { adminRoutes } from './routes/admin.ts';
 import { proRoutes } from './routes/pro.ts';
 
 export function buildServer() {
-  const app = Fastify({ logger: true });
+  // trustProxy so req.ip reads the real client from X-Forwarded-For behind
+  // Cloud Run's front-end (otherwise every caller looks like the proxy IP and
+  // shares one rate-limit bucket).
+  const app = Fastify({ logger: true, trustProxy: true });
   // The web app calls the API cross-origin (Firebase Hosting -> Cloud Run). Auth
   // is via Bearer tokens (no cookies), so we just allow the known origins.
   app.register(cors, {
     origin: config.corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
+  // Abuse / brute-force protection. Bucket per caller: the bearer token when
+  // present (≈ per user), else the client IP (covers unauthenticated sign-in
+  // traffic). Over the limit -> 429 with a Retry-After header.
+  if (config.rateLimitEnabled) {
+    app.register(rateLimit, {
+      max: config.rateLimitMax,
+      timeWindow: config.rateLimitWindowMs,
+      keyGenerator: (req) => (req.headers['authorization'] as string | undefined) ?? req.ip,
+      errorResponseBuilder: (_req, context) => ({
+        statusCode: 429,
+        error: 'rate_limited',
+        message: `Too many requests — retry in ${Math.ceil(context.ttl / 1000)}s.`,
+      }),
+    });
+  }
   app.register(healthRoutes);
   app.register(tripRoutes);
   app.register(parcelRoutes);
