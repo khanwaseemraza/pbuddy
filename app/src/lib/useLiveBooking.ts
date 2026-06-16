@@ -3,8 +3,7 @@
 // and ALSO polls the API as a fallback so it works locally without those
 // credentials. Returns the latest booking plus a manual refresh.
 import { useCallback, useEffect, useState } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from './firebase';
+import { subscribeBookingStatus } from './firebase';
 import { api } from './api';
 
 export interface LiveBooking {
@@ -33,16 +32,8 @@ export function useLiveBooking(id: string, getToken: () => Promise<string | null
 
     // Real-time nudge: when the mirror doc changes, refresh immediately. Errors
     // (e.g. doc not yet written locally -> rules deny missing doc) are ignored.
-    let unsub = () => {};
-    try {
-      unsub = onSnapshot(
-        doc(db, 'booking_status', id),
-        () => refresh(),
-        () => {},
-      );
-    } catch {
-      /* firestore unavailable — polling carries it */
-    }
+    // Real-time nudge: when the mirror doc changes, refresh immediately.
+    const unsub = subscribeBookingStatus(id, refresh);
 
     return () => {
       clearInterval(poll);

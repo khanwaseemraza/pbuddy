@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import { Link, Redirect, type Href } from 'expo-router';
 import { useAuth } from '../src/auth/AuthProvider';
 import { api, ApiError, type Corridor } from '../src/lib/api';
+import { registerForPush } from '../src/lib/push';
 import { GlassCard } from '../src/components/GlassCard';
 import { theme } from '../src/theme';
 
@@ -23,6 +24,8 @@ export default function Home() {
         // from the Firebase user as a fallback (some ID tokens omit phone_number).
         // accept_legal records consent to the current legal bundle on first sign-up.
         await api.post('/users/me', token, { phone: user.phoneNumber, accept_legal: true });
+        // Register this device for push (native only; web is a no-op). Best-effort.
+        void registerForPush(getToken);
         const data = await api.get<{ corridors: Corridor[] }>('/corridors', token);
         setCorridors(data.corridors);
       } catch (e) {

@@ -1,10 +1,10 @@
 // Auth context: tracks the Firebase user and a fresh ID token for API calls.
+// Platform specifics live in lib/firebase (web) / firebase.native (iOS/Android).
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { onAuthStateChanged, signOut as fbSignOut, type User } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { getIdToken, signOutUser, subscribeAuth, type AppUser } from '../lib/firebase';
 
 interface AuthState {
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
   /** Returns a current ID token (refreshed by the SDK as needed). */
   getToken: () => Promise<string | null>;
@@ -14,11 +14,11 @@ interface AuthState {
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, (u) => {
+    return subscribeAuth((u) => {
       setUser(u);
       setLoading(false);
     });
@@ -27,8 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthState = {
     user,
     loading,
-    getToken: async () => (auth.currentUser ? auth.currentUser.getIdToken() : null),
-    signOut: () => fbSignOut(auth),
+    getToken: getIdToken,
+    signOut: signOutUser,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { Link, useRouter, type Href } from 'expo-router';
-import type { ConfirmationResult } from 'firebase/auth';
-import { sendOtp } from '../src/lib/firebase';
+import { sendOtp, type OtpConfirmation } from '../src/lib/firebase';
 import { GlassCard } from '../src/components/GlassCard';
 import { theme } from '../src/theme';
 
@@ -12,7 +11,7 @@ export default function SignIn() {
   const router = useRouter();
   const [phone, setPhone] = useState('+44');
   const [code, setCode] = useState('');
-  const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
+  const [confirmation, setConfirmation] = useState<OtpConfirmation | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "413412903611",
+    "project_id": "pbuddy-mvp",
+    "storage_bucket": "pbuddy-mvp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:413412903611:android:dae549828de7cd347b379e",
+        "android_client_info": {
+          "package_name": "uk.co.pbuddy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "413412903611-sosuht2quef6h39in6ij9h39dts7rtqf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPeOBkR2Psn4FKWVG9JAT5rDZ4mN-ig9Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "413412903611-sosuht2quef6h39in6ij9h39dts7rtqf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "413412903611-t72le8mvc8ev6jakv587aaeqh87ppre1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "uk.co.pbuddy"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

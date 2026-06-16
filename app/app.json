@@ -7,6 +7,14 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "uk.co.pbuddy",
+      "googleServicesFile": "./GoogleService-Info.plist"
+    },
+    "android": {
+      "package": "uk.co.pbuddy",
+      "googleServicesFile": "./google-services.json"
+    },
     "web": {
       "bundler": "metro",
       "output": "single"
@@ -14,7 +22,16 @@
     "plugins": [
       "expo-router",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/messaging",
+      [
+        "expo-build-properties",
+        {
+          "ios": { "useFrameworks": "static" }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
