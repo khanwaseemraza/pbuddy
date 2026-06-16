@@ -499,7 +499,7 @@ EPICS = [
                     "Uptime check on /readyz + alert policies (5xx rate, DB CPU/connections, payment failures)"],
              "verify": "Forcing a 5xx fires an alert; uptime check shows green on /readyz.",
              "refs": ["api/src/server.ts"]},
-            {"code": "E10-S6", "summary": "Cloud SQL automated backups, PITR + DR runbook", "status": "To Do",
+            {"code": "E10-S6", "summary": "Cloud SQL automated backups, PITR + DR runbook", "status": "Done",
              "context": "Production data needs recoverability. Enable automated backups and point-in-time recovery, "
                         "test a restore, and document the runbook.",
              "ac": ["Automated daily backups + PITR (WAL) enabled on pbuddy-db",
