@@ -946,10 +946,21 @@ test('reconciliation is admin-only', async () => {
 
 // ---- User provisioning (PBD-59) ------------------------------------------
 
+test('public: /corridors and /price-suggestion work with no auth (browse-first)', async () => {
+  const corridors = await app.inject({ method: 'GET', url: '/corridors' });
+  assert.equal(corridors.statusCode, 200);
+  assert.ok(Array.isArray(corridors.json().corridors));
+
+  const est = await app.inject({ method: 'GET', url: '/price-suggestion?size_band=M&distance_km=300' });
+  assert.equal(est.statusCode, 200);
+  assert.ok(est.json().suggested_contribution_pennies > 0);
+});
+
 test('POST /users/me provisions the user from the token, unblocking authed calls', async () => {
   // A brand-new (unprovisioned) uid is rejected by an authenticated endpoint.
+  // (/corridors is public now, so use the authed profile endpoint to prove it.)
   const denied = await app.inject({
-    method: 'GET', url: '/corridors', headers: { authorization: 'Bearer brand-new-uid' },
+    method: 'GET', url: '/users/me', headers: { authorization: 'Bearer brand-new-uid' },
   });
   assert.equal(denied.statusCode, 403);
   assert.equal(denied.json().error, 'user_not_provisioned');
@@ -962,13 +973,7 @@ test('POST /users/me provisions the user from the token, unblocking authed calls
   assert.equal(prov.statusCode, 200, prov.body);
   assert.equal(prov.json().firebase_uid, 'brand-new-uid');
 
-  // Now authenticated calls succeed.
-  const ok = await app.inject({
-    method: 'GET', url: '/corridors', headers: { authorization: 'Bearer brand-new-uid' },
-  });
-  assert.equal(ok.statusCode, 200);
-
-  // GET /users/me returns the profile; provisioning is idempotent.
+  // Now the authenticated profile endpoint succeeds; provisioning is idempotent.
   const me = await app.inject({
     method: 'GET', url: '/users/me', headers: { authorization: 'Bearer brand-new-uid' },
   });

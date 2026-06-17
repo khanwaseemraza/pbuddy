@@ -917,6 +917,26 @@ EPICS = [
                         "skeleton loaders, and error toasts across the app.",
              "ac": ["First-run intro", "Every list/screen has empty + loading + error states"],
              "verify": "Fresh account sees onboarding; lists show skeletons then content/empty."},
+            {"code": "E20-S7", "summary": "Public landing page (browse-first, no login)", "status": "In Progress",
+             "context": "Like BlaBlaCar/Uber: don't force login to look. A public landing with the value prop, "
+                        "how cost-sharing works, live corridors, and clear CTAs — reachable with no account.",
+             "ac": ["Unauthenticated users see a landing page, NOT a forced sign-in",
+                    "Hero + how-it-works + live corridors + CTAs to send/carry",
+                    "Signed-in users go straight to the home hub"],
+             "verify": "Open the app logged out -> landing renders; logged in -> home.",
+             "refs": ["app/app/index.tsx"]},
+            {"code": "E20-S8", "summary": "Public browse + contribution estimator (no login)", "status": "In Progress",
+             "context": "Let visitors see supply and estimate price before signing up: public corridor list + a "
+                        "size/route -> suggested contribution estimator.",
+             "ac": ["GET /corridors + /price-suggestion are public", "Estimator returns a capped suggestion with no auth"],
+             "verify": "Logged out, pick a route + size -> see an estimated contribution.",
+             "refs": ["api/src/routes/trips.ts", "api/src/routes/pricing.ts"]},
+            {"code": "E20-S9", "summary": "Auth-gate at commitment (sign in to post/bid/pay)", "status": "In Progress",
+             "context": "Authenticate only when it creates an obligation / moves money / reveals PII. Browse + start "
+                        "the wizard anonymously; require sign-in at the final Post/Bid/Fund step.",
+             "ac": ["Wizards load + run without auth (corridors fetched publicly)",
+                    "The commit action redirects to sign-in when logged out, money/PII stay gated + KYC"],
+             "verify": "Logged out, walk the send-a-parcel wizard; Post prompts sign-in."},
         ],
     },
 ]

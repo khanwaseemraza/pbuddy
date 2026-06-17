@@ -31,18 +31,16 @@ export default function NewParcel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Public fetch so the wizard works logged out (browse-first); sign-in is only
+  // required at the final Post step.
   useEffect(() => {
-    (async () => {
-      const token = await getToken();
-      if (!token) return;
-      try {
-        const data = await api.get<{ corridors: Corridor[] }>('/corridors', token);
-        setCorridors(data.corridors);
-        setCorridorId(data.corridors[0]?.id ?? null);
-      } catch {
-        /* handled on submit */
-      }
-    })();
+    api
+      .getPublic<{ corridors: Corridor[] }>('/corridors')
+      .then((d) => {
+        setCorridors(d.corridors);
+        setCorridorId(d.corridors[0]?.id ?? null);
+      })
+      .catch(() => {});
   }, []);
 
   const valuePennies = Math.round(parseFloat(valueGbp || '0') * 100);
@@ -59,11 +57,15 @@ export default function NewParcel() {
   ][step];
 
   async function onSubmit() {
+    const token = await getToken();
+    if (!token) {
+      // Auth-gate at commit: send them to sign in, then back to post.
+      router.push('/sign-in');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const token = await getToken();
-      if (!token) return;
       const now = Date.now();
       const dim = SIZES[size];
       const parcel = await api.post<{ id: string }>('/parcels', token, {

@@ -1,7 +1,6 @@
 // Price-suggestion endpoint. Surfaces a fair contribution for the sender's
 // post-parcel form before bidding liquidity exists.
 import type { FastifyInstance } from 'fastify';
-import { authenticate } from '../middleware/auth.ts';
 import { deriveSizeBand, suggestContribution, type SizeBand } from '../services/pricing.ts';
 import { haversineKm } from '../services/matching.ts';
 import { lookupPostcode } from '../lib/postcodes.ts';
@@ -15,9 +14,9 @@ interface Query {
 }
 
 export async function pricingRoutes(app: FastifyInstance): Promise<void> {
+  // Public: lets visitors estimate a fair contribution before signing up.
   app.get<{ Querystring: Query }>(
     '/price-suggestion',
-    { preHandler: [authenticate] },
     async (req, reply) => {
       const q = req.query;
       const sizeBand: SizeBand = q.size_band

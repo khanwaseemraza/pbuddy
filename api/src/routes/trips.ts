@@ -21,7 +21,9 @@ interface CreateTripBody {
 }
 
 export async function tripRoutes(app: FastifyInstance): Promise<void> {
-  app.get('/corridors', { preHandler: [authenticate] }, async () => {
+  // Public: the corridor allowlist is non-sensitive reference data, so visitors
+  // can browse routes before signing up (auth is required only to transact).
+  app.get('/corridors', async () => {
     const { rows } = await pool.query(
       `SELECT id, origin_city, dest_city, display_name
          FROM corridors WHERE is_active = true ORDER BY display_name`,

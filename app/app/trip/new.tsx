@@ -29,16 +29,15 @@ export default function NewTrip() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Public fetch so the wizard works logged out; sign-in only at the Post step.
   useEffect(() => {
-    (async () => {
-      const token = await getToken();
-      if (!token) return;
-      try {
-        const data = await api.get<{ corridors: Corridor[] }>('/corridors', token);
-        setCorridors(data.corridors);
-        setCorridorId(data.corridors[0]?.id ?? null);
-      } catch { /* on submit */ }
-    })();
+    api
+      .getPublic<{ corridors: Corridor[] }>('/corridors')
+      .then((d) => {
+        setCorridors(d.corridors);
+        setCorridorId(d.corridors[0]?.id ?? null);
+      })
+      .catch(() => {});
   }, []);
 
   const costPennies = Math.round(parseFloat(costGbp || '0') * 100);
@@ -46,11 +45,14 @@ export default function NewTrip() {
   const stepValid = [!!corridorId, /\d{4}-\d{2}-\d{2}/.test(date), costPennies > 0][step];
 
   async function onSubmit() {
+    const token = await getToken();
+    if (!token) {
+      router.push('/sign-in');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const token = await getToken();
-      if (!token) return;
       const trip = await api.post<{ id: string }>('/trips', token, {
         corridor_id: corridorId,
         direction,
