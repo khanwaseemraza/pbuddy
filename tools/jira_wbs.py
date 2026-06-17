@@ -885,13 +885,13 @@ EPICS = [
             "A shared design system backs every screen.",
         ],
         "children": [
-            {"code": "E20-S1", "summary": "Design system kit v2 (pills, stepper, cards, sheet, states)", "status": "In Progress",
+            {"code": "E20-S1", "summary": "Design system kit v2 (pills, stepper, cards, sheet, states)", "status": "Done",
              "context": "Reusable atoms/molecules: status pills, progress stepper, list/section cards, bottom "
                         "sheet, money/price display, avatars, empty states, loading skeletons, toasts.",
              "ac": ["Shared components used across screens", "Airbnb palette + glass styling consistent"],
              "verify": "Screens render from the shared kit; no bespoke one-off styles per screen.",
              "refs": ["app/src/components/ui.tsx", "app/src/theme.ts"]},
-            {"code": "E20-S2", "summary": "Sender flow: guided 'Send a parcel' wizard", "status": "To Do",
+            {"code": "E20-S2", "summary": "Sender flow: guided 'Send a parcel' wizard", "status": "In Review",
              "context": "Route -> pickup/dropoff (map) -> parcel size/value -> contribution (cost-sharing framed) "
                         "-> review & confirm, with a progress stepper + per-step validation.",
              "ac": ["Multi-step wizard with progress + back/next", "Per-step validation; clear review screen",
