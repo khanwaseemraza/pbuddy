@@ -537,7 +537,7 @@ EPICS = [
             "Apps are accepted into TestFlight and Play closed testing.",
         ],
         "children": [
-            {"code": "E11-S1", "summary": "EAS dev build + @react-native-firebase native phone auth", "status": "In Review",
+            {"code": "E11-S1", "summary": "EAS dev build + @react-native-firebase native phone auth", "status": "Done",
              "context": "Add the native Firebase config plugin and EAS build profiles; wire native phone-OTP via "
                         "@react-native-firebase/auth (the JS SDK path is web-only).",
              "ac": ["eas.json profiles (dev/preview/prod); GoogleService-Info.plist + google-services.json wired",
