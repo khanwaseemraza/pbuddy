@@ -1,14 +1,16 @@
-// Post a trip: corridor + direction + transport, depart date, and your journey
-// cost — which becomes the cost-sharing cap for what you can carry.
+// Carry & earn — a guided wizard to post a trip you're already taking. Your
+// declared journey cost becomes the cost-sharing cap on what you can accept.
 import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '../../src/auth/AuthProvider';
-import { api, ApiError, type Corridor } from '../../src/lib/api';
-import { Button, Chip, Field, Input } from '../../src/components/ui';
+import { api, ApiError, gbp, type Corridor } from '../../src/lib/api';
+import { Chip, Field, Input } from '../../src/components/ui';
+import { Card, ProgressBar, ScreenTitle, StepNav, SummaryRow } from '../../src/components/kit';
 import { theme } from '../../src/theme';
 
 const MODES = ['train', 'bus', 'coach', 'car'] as const;
+const STEPS = ['Route', 'Trip', 'Cost & review'];
 
 function plusDaysISODate(days: number): string {
   return new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
@@ -17,6 +19,7 @@ function plusDaysISODate(days: number): string {
 export default function NewTrip() {
   const router = useRouter();
   const { getToken } = useAuth();
+  const [step, setStep] = useState(0);
   const [corridors, setCorridors] = useState<Corridor[]>([]);
   const [corridorId, setCorridorId] = useState<string | null>(null);
   const [direction, setDirection] = useState<'outbound' | 'return'>('outbound');
@@ -39,10 +42,10 @@ export default function NewTrip() {
   }, []);
 
   const costPennies = Math.round(parseFloat(costGbp || '0') * 100);
-  const canSubmit = corridorId && date && costPennies > 0;
+  const corridorName = corridors.find((c) => c.id === corridorId)?.display_name ?? '—';
+  const stepValid = [!!corridorId, /\d{4}-\d{2}-\d{2}/.test(date), costPennies > 0][step];
 
   async function onSubmit() {
-    if (!canSubmit) return;
     setBusy(true);
     setError(null);
     try {
@@ -70,42 +73,73 @@ export default function NewTrip() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} contentContainerStyle={{ padding: 24, paddingTop: 64 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} contentContainerStyle={{ padding: 24, paddingTop: 64, paddingBottom: 48 }}>
       <Stack.Screen options={{ headerShown: false }} />
-      <Text style={{ color: theme.text, fontSize: 26, fontWeight: '800', marginBottom: 4 }}>Carry & earn</Text>
-      <Text style={{ color: theme.muted, marginBottom: 24 }}>
-        Cover your travel costs — you can only accept up to what your journey costs.
-      </Text>
+      <ProgressBar step={step} total={STEPS.length} />
 
-      <Field label="Route">
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-          {corridors.map((c) => (
-            <Chip key={c.id} label={c.display_name} active={c.id === corridorId} onPress={() => setCorridorId(c.id)} />
-          ))}
-        </View>
-      </Field>
-      <Field label="Direction">
-        <View style={{ flexDirection: 'row' }}>
-          <Chip label="Outbound" active={direction === 'outbound'} onPress={() => setDirection('outbound')} />
-          <Chip label="Return" active={direction === 'return'} onPress={() => setDirection('return')} />
-        </View>
-      </Field>
-      <Field label="Transport">
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-          {MODES.map((m) => (
-            <Chip key={m} label={m} active={m === mode} onPress={() => setMode(m)} />
-          ))}
-        </View>
-      </Field>
-      <Field label="Departure date">
-        <Input value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" autoCapitalize="none" />
-      </Field>
-      <Field label="Your journey cost (£) — your earning cap">
-        <Input value={costGbp} onChangeText={setCostGbp} placeholder="50.00" keyboardType="decimal-pad" />
-      </Field>
+      {step === 0 && (
+        <>
+          <ScreenTitle title="Your journey" subtitle="Post a trip you’re already taking and carry parcels along the way." />
+          <Field label="Route">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {corridors.map((c) => (
+                <Chip key={c.id} label={c.display_name} active={c.id === corridorId} onPress={() => setCorridorId(c.id)} />
+              ))}
+            </View>
+          </Field>
+          <Field label="Direction">
+            <View style={{ flexDirection: 'row' }}>
+              <Chip label="Outbound" active={direction === 'outbound'} onPress={() => setDirection('outbound')} />
+              <Chip label="Return" active={direction === 'return'} onPress={() => setDirection('return')} />
+            </View>
+          </Field>
+        </>
+      )}
 
-      {error ? <Text style={{ color: theme.danger, marginBottom: 12 }}>{error}</Text> : null}
-      <Button label={canSubmit ? 'Post trip' : 'Complete the form'} onPress={onSubmit} busy={busy} />
+      {step === 1 && (
+        <>
+          <ScreenTitle title="How & when" subtitle="Your transport and departure date." />
+          <Field label="Transport">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {MODES.map((m) => (
+                <Chip key={m} label={m} active={m === mode} onPress={() => setMode(m)} />
+              ))}
+            </View>
+          </Field>
+          <Field label="Departure date">
+            <Input value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" autoCapitalize="none" />
+          </Field>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <ScreenTitle
+            title="Your journey cost"
+            subtitle="This is your cost-sharing cap — you can never accept more than what your own trip costs."
+          />
+          <Field label="Journey cost (£)">
+            <Input value={costGbp} onChangeText={setCostGbp} placeholder="50.00" keyboardType="decimal-pad" />
+          </Field>
+          <Card>
+            <SummaryRow label="Route" value={`${corridorName} · ${direction}`} />
+            <SummaryRow label="Transport" value={mode} />
+            <SummaryRow label="Departs" value={date} />
+            <View style={{ height: 1, backgroundColor: theme.border, marginVertical: 6 }} />
+            <SummaryRow label="Contribution cap" value={gbp(costPennies)} strong />
+          </Card>
+        </>
+      )}
+
+      {error ? <Text style={{ color: theme.danger, marginTop: 16 }}>{error}</Text> : null}
+
+      <StepNav
+        onBack={step > 0 ? () => setStep(step - 1) : undefined}
+        onNext={() => (step < STEPS.length - 1 ? setStep(step + 1) : onSubmit())}
+        nextLabel={step === STEPS.length - 1 ? 'Post trip' : 'Continue'}
+        busy={busy}
+        disabled={!stepValid}
+      />
     </ScrollView>
   );
 }

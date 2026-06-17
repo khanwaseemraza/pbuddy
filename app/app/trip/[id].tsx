@@ -1,12 +1,12 @@
-// Trip detail: matched parcels you could carry; place a cap-bounded bid.
+// Discover parcels you could carry on this trip, and place a cap-bounded bid.
 // A bid above your journey cost is rejected with the cost-sharing message.
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { api, ApiError, gbp } from '../../src/lib/api';
-import { GlassCard } from '../../src/components/GlassCard';
-import { Button, Input } from '../../src/components/ui';
+import { Input } from '../../src/components/ui';
+import { Card, EmptyState, ScreenTitle, Skeleton, StatusPill } from '../../src/components/kit';
 import { theme } from '../../src/theme';
 
 interface Match {
@@ -33,15 +33,21 @@ export default function TripDetail() {
   useEffect(() => { load(); }, [id]);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} contentContainerStyle={{ padding: 24, paddingTop: 64 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} contentContainerStyle={{ padding: 24, paddingTop: 64, paddingBottom: 48 }}>
       <Stack.Screen options={{ headerShown: false }} />
-      <Text style={{ color: theme.text, fontSize: 26, fontWeight: '800', marginBottom: 4 }}>Parcels for your trip</Text>
-      <Text style={{ color: theme.muted, marginBottom: 20 }}>Bid only up to your journey cost — that’s the cap.</Text>
+      <ScreenTitle title="Parcels on your route" subtitle="Tap to bid — never above your journey cost (that’s the cap)." />
 
       {!matches ? (
-        <ActivityIndicator color={theme.accent} />
+        <>
+          <Skeleton height={120} />
+          <Skeleton height={120} />
+        </>
       ) : matches.length === 0 ? (
-        <Text style={{ color: theme.muted }}>No matching parcels right now. Check back closer to your trip.</Text>
+        <EmptyState
+          emoji="📦"
+          title="No matching parcels yet"
+          subtitle="We’ll surface parcels heading your way as senders post them. Check back closer to your trip."
+        />
       ) : (
         matches.map((m) => <MatchRow key={m.parcel_id} match={m} tripId={id!} getToken={getToken} onDone={load} />)
       )}
@@ -74,7 +80,7 @@ function MatchRow({
         trip_id: tripId,
         bid_contribution_pennies: Math.round(parseFloat(amount || '0') * 100),
       });
-      setMsg({ ok: true, text: 'Bid placed!' });
+      setMsg({ ok: true, text: 'Bid placed — the sender will be notified.' });
       onDone();
     } catch (e) {
       const err = e as ApiError;
@@ -94,18 +100,23 @@ function MatchRow({
   }
 
   return (
-    <GlassCard style={{ marginBottom: 12 }}>
-      <Text style={{ color: theme.text, fontWeight: '700', fontSize: 16 }}>{match.title}</Text>
-      <Text style={{ color: theme.muted, marginTop: 2, marginBottom: 10 }}>
-        ~{Math.round(match.detour_km)} km · suggested {gbp(match.contribution_ref_pennies)}
-      </Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Input value={amount} onChangeText={setAmount} keyboardType="decimal-pad" style={{ flex: 1 }} />
-        <View style={{ width: 110 }}>
-          <Button label="Bid" onPress={bid} busy={busy} />
-        </View>
+    <Card style={{ marginBottom: 12 }}>
+      <Text style={{ color: theme.text, fontWeight: '800', fontSize: 17 }}>{match.title}</Text>
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, marginBottom: 14 }}>
+        <StatusPill label={`~${Math.round(match.detour_km)} km detour`} />
+        <StatusPill label={match.pricing_mode === 'auction' ? 'Travellers bid' : 'Fixed'} tone="accent" />
+        <StatusPill label={`suggested ${gbp(match.contribution_ref_pennies)}`} tone="success" />
       </View>
-      {msg ? <Text style={{ color: msg.ok ? theme.accent : theme.danger, marginTop: 10 }}>{msg.text}</Text> : null}
-    </GlassCard>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Input value={amount} onChangeText={setAmount} keyboardType="decimal-pad" style={{ flex: 1 }} />
+        <Pressable
+          onPress={busy ? undefined : bid}
+          style={{ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 22, opacity: busy ? 0.7 : 1 }}
+        >
+          <Text style={{ color: theme.accentText, fontWeight: '800' }}>{busy ? '…' : 'Bid'}</Text>
+        </Pressable>
+      </View>
+      {msg ? <Text style={{ color: msg.ok ? '#1E7F4E' : theme.danger, marginTop: 10 }}>{msg.text}</Text> : null}
+    </Card>
   );
 }
