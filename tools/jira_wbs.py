@@ -953,7 +953,7 @@ EPICS = [
             "Classification + RTW posture matches counsel's structure before launch.",
         ],
         "children": [
-            {"code": "E21-S1", "summary": "Marketing guardrail lint (never-say terms) across app + api", "status": "In Progress",
+            {"code": "E21-S1", "summary": "Marketing guardrail lint (never-say terms) across app + api", "status": "In Review",
              "context": "Extend the framing lint to fail CI on courier/logistics/labour/carriage language "
                         "(our couriers, delivery fleet, we deliver, become a driver, deliver by train, "
                         "guaranteed delivery, fully insured) in BOTH api and app copy. Market the connection "
