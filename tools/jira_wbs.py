@@ -907,12 +907,12 @@ EPICS = [
                         "codes, live updates (Firestore mirror + poll).",
              "ac": ["Status timeline reflects lifecycle", "Map + participant + hand-off codes shown live"],
              "verify": "A status change updates the timeline live."},
-            {"code": "E20-S5", "summary": "Traveller flow: post trip + map-first parcel discovery", "status": "To Do",
+            {"code": "E20-S5", "summary": "Traveller flow: post trip + map-first parcel discovery", "status": "In Review",
              "context": "Guided trip post + a map/list of matchable parcels on the route with contribution, "
                         "detour, and trust; one-tap bid.",
              "ac": ["Trip post wizard", "Map/list discovery of cap-valid parcels; one-tap bid"],
              "verify": "Post a trip, discover a parcel, place a bid."},
-            {"code": "E20-S6", "summary": "Onboarding + empty/loading/error states", "status": "To Do",
+            {"code": "E20-S6", "summary": "Onboarding + empty/loading/error states", "status": "In Review",
              "context": "First-run explainer (send vs carry, how cost-sharing works) + consistent empty states, "
                         "skeleton loaders, and error toasts across the app.",
              "ac": ["First-run intro", "Every list/screen has empty + loading + error states"],
