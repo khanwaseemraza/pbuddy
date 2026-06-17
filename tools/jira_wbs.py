@@ -869,4 +869,54 @@ EPICS = [
              "verify": "A resolved ticket records response time + a CSAT score."},
         ],
     },
+    # =====================================================================
+    {
+        "code": "E20",
+        "summary": "Consumer-grade Flow UX (Uber / BlaBlaCar / DPD level)",
+        "status": "In Progress",
+        "context": "The screens are functional but bare. Rebuild the core journeys into guided, "
+                   "map-aware, polished flows that feel like Uber/BlaBlaCar/DPD: a real design "
+                   "system, step-by-step sender/traveller wizards, live tracking with a status "
+                   "timeline + map, and consistent empty/loading/error states. No store submission "
+                   "until the flows feel production-quality.",
+        "ac": [
+            "Sender and traveller journeys are guided, validated, multi-step flows (not raw forms).",
+            "Live tracking shows a status timeline + map; states/loading/errors are consistent.",
+            "A shared design system backs every screen.",
+        ],
+        "children": [
+            {"code": "E20-S1", "summary": "Design system kit v2 (pills, stepper, cards, sheet, states)", "status": "In Progress",
+             "context": "Reusable atoms/molecules: status pills, progress stepper, list/section cards, bottom "
+                        "sheet, money/price display, avatars, empty states, loading skeletons, toasts.",
+             "ac": ["Shared components used across screens", "Airbnb palette + glass styling consistent"],
+             "verify": "Screens render from the shared kit; no bespoke one-off styles per screen.",
+             "refs": ["app/src/components/ui.tsx", "app/src/theme.ts"]},
+            {"code": "E20-S2", "summary": "Sender flow: guided 'Send a parcel' wizard", "status": "To Do",
+             "context": "Route -> pickup/dropoff (map) -> parcel size/value -> contribution (cost-sharing framed) "
+                        "-> review & confirm, with a progress stepper + per-step validation.",
+             "ac": ["Multi-step wizard with progress + back/next", "Per-step validation; clear review screen",
+                    "Contribution framed as cost-sharing (framing-clean)"],
+             "verify": "Walk the wizard end-to-end; a parcel is posted with correct data."},
+            {"code": "E20-S3", "summary": "Sender: ranked bids review + accept + escrow fund", "status": "To Do",
+             "context": "Traveller bid cards (trust score, rating, ETA, transport, contribution) ranked; accept -> "
+                        "fund escrow with a clear price breakdown.",
+             "ac": ["Ranked bid cards with trust/ETA/price", "Accept + fund with itemised breakdown"],
+             "verify": "Accept a bid and fund; booking advances."},
+            {"code": "E20-S4", "summary": "Live tracking screen (status timeline + map + hand-off)", "status": "To Do",
+             "context": "Booking detail as a tracking view: status timeline, map, participant info, hand-off "
+                        "codes, live updates (Firestore mirror + poll).",
+             "ac": ["Status timeline reflects lifecycle", "Map + participant + hand-off codes shown live"],
+             "verify": "A status change updates the timeline live."},
+            {"code": "E20-S5", "summary": "Traveller flow: post trip + map-first parcel discovery", "status": "To Do",
+             "context": "Guided trip post + a map/list of matchable parcels on the route with contribution, "
+                        "detour, and trust; one-tap bid.",
+             "ac": ["Trip post wizard", "Map/list discovery of cap-valid parcels; one-tap bid"],
+             "verify": "Post a trip, discover a parcel, place a bid."},
+            {"code": "E20-S6", "summary": "Onboarding + empty/loading/error states", "status": "To Do",
+             "context": "First-run explainer (send vs carry, how cost-sharing works) + consistent empty states, "
+                        "skeleton loaders, and error toasts across the app.",
+             "ac": ["First-run intro", "Every list/screen has empty + loading + error states"],
+             "verify": "Fresh account sees onboarding; lists show skeletons then content/empty."},
+        ],
+    },
 ]
