@@ -160,7 +160,7 @@ export default function NewParcel() {
         <>
           <ScreenTitle
             title="Your contribution"
-            subtitle="This goes toward the traveller’s journey costs — it’s capped to their own fare, never a delivery fee."
+            subtitle="This goes toward the traveller’s journey costs — capped to their own fare, never a payment for a service."
           />
           <Field label="How is it set?">
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>

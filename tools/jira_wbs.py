@@ -939,4 +939,73 @@ EPICS = [
              "verify": "Logged out, walk the send-a-parcel wizard; Post prompts sign-in."},
         ],
     },
+    # =====================================================================
+    {
+        "code": "E21",
+        "summary": "Legal-aligned model & positioning v2 (counsel-gated)",
+        "status": "In Progress",
+        "context": "Encode the final legal/positioning strategy. The two existential risks are worker "
+                   "classification and Right-to-Work; licensing is light; marketing language is itself a "
+                   "compliance tool. Several items reverse load-bearing mechanics and MUST have a UK "
+                   "solicitor's sign-off before shipping — those are flagged counsel-gated.",
+        "ac": [
+            "User-facing language never sounds like a courier/logistics company (enforced).",
+            "Classification + RTW posture matches counsel's structure before launch.",
+        ],
+        "children": [
+            {"code": "E21-S1", "summary": "Marketing guardrail lint (never-say terms) across app + api", "status": "In Progress",
+             "context": "Extend the framing lint to fail CI on courier/logistics/labour/carriage language "
+                        "(our couriers, delivery fleet, we deliver, become a driver, deliver by train, "
+                        "guaranteed delivery, fully insured) in BOTH api and app copy. Market the connection "
+                        "and the journey, never the labour or the carriage.",
+             "ac": ["Lint scans app/ + api/src", "Dangerous affirmative phrasing fails CI; legit negations pass"],
+             "verify": "node api/scripts/banned-words.mjs flags 'our couriers' but not 'never a courier fee'.",
+             "refs": ["api/scripts/banned-words.mjs"]},
+            {"code": "E21-S2", "summary": "Copy pass: align all strings to the say/never-say list", "status": "To Do",
+             "context": "Marketplace/connection/journey framing; buddy copy emphasises autonomy ('you choose what, "
+                        "when, how'); soften any labour framing (e.g. bare 'Carry & earn').",
+             "ac": ["Sender, buddy, operator copy follow the positioning doc", "Passes the guardrail lint"],
+             "verify": "Copy review against the say/never-say list passes."},
+            {"code": "E21-S3", "summary": "Sealed-package + sender declaration + right-to-refuse (replace open-box)", "status": "To Do",
+             "context": "COUNSEL-GATED. Inspection gives the carrier knowledge and erodes the innocent-carrier "
+                        "defence; the sealed + declared + right-to-refuse model is safer. Reverses E2-S8.",
+             "ac": ["Pickup no longer requires an open-box inspection", "Sender contents declaration + carrier right-to-refuse recorded"],
+             "verify": "Solicitor signs off; pickup flow updated + audited."},
+            {"code": "E21-S4", "summary": "Right-to-Work for ALL buddies at onboarding + substitute re-check", "status": "To Do",
+             "context": "COUNSEL-GATED. 2026 platform regime is courier-targeted, platform-liable (£60k/worker + "
+                        "criminal). Verify every carrier, not just Pro; re-check substitutes (the substitution "
+                        "right is exactly what the Home Office polices).",
+             "ac": ["RTW required to carry at all (not Pro-only)", "Substitution triggers a fresh RTW check"],
+             "verify": "Solicitor signs off; onboarding gates carrying on RTW for all buddies."},
+            {"code": "E21-S5", "summary": "Self-employment-in-substance controls", "status": "To Do",
+             "context": "COUNSEL-GATED. Genuine substitution right, no imposed pricing, no obligation to accept, "
+                        "no control over how/when they travel, no punitive deactivation. Note: full-time-only "
+                        "framing works AGAINST classification — favour supplementary, going-anyway carriers.",
+             "ac": ["Platform mechanics reviewed against worker-status tests with counsel"],
+             "verify": "Counsel pressure-tests the classification structure; gaps closed."},
+            {"code": "E21-S6", "summary": "Two-layer liability terms + optional sender-paid insurance bolt-on", "status": "To Do",
+             "context": "COUNSEL-GATED. CRA-safe terms (can't fully exclude own-negligence) + a separate "
+                        "discretionary goodwill layer (Uber's structure). Make cover an OPTIONAL sender bolt-on, "
+                        "not mandatory; never market 'fully insured'.",
+             "ac": ["Solicitor-drafted two-layer liability", "Insurance optional at checkout, not forced"],
+             "verify": "Terms reviewed; checkout offers optional cover."},
+            {"code": "E21-S7", "summary": "Quantified, substantiated green claims (CO2 vs van)", "status": "To Do",
+             "context": "ASA/CMA Green Claims Code: accurate, substantiated, not misleading. Surface a defensible "
+                        "per-delivery avoided-CO2 figure (vs a dedicated van), 'fewer vans' as the lead message — "
+                        "positioning, never a compliance argument.",
+             "ac": ["Methodology documented", "Per-delivery avoided-CO2 shown with an honest van comparison"],
+             "verify": "A reviewer can reproduce the CO2 figure from the methodology."},
+            {"code": "E21-S8", "summary": "No international students as carriers (broaden the lock)", "status": "To Do",
+             "context": "COUNSEL-GATED. Extend the student restriction from Pro-only to carrying at all — only "
+                        "people who can lawfully do this carry. Removes the contested 'going anyway' parcel defence.",
+             "ac": ["Student-visa users cannot carry on any tier"],
+             "verify": "Counsel signs off; carry path blocks student-visa users."},
+            {"code": "E21-S9", "summary": "Operator + government positioning kit (pilot pitch)", "status": "To Do",
+             "context": "Revenue-first to operators ('monetise spare capacity, hit decarbonisation targets'), "
+                        "innovation/net-zero to government. A regional/open-access rail or coach pilot sanctions "
+                        "the carriage and dissolves conditions-of-carriage risk — pursue as upside, not launch-gating.",
+             "ac": ["Operator + government one-pagers", "Pilot outreach list"],
+             "verify": "Positioning kit drafted; first operator approached."},
+        ],
+    },
 ]
