@@ -47,7 +47,7 @@ export default function Trips() {
           <Skeleton height={96} />
         </>
       ) : trips.length === 0 ? (
-        <EmptyState emoji="🧭" title="No trips yet" subtitle="Post a journey you’re already taking and carry parcels along the way." />
+        <EmptyState title="No trips yet" subtitle="Post a journey you’re already taking and carry parcels along the way." />
       ) : (
         <FlatList
           data={trips}

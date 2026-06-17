@@ -84,7 +84,7 @@ export default function Job() {
           </>
         ) : booking.status === 'released' ? (
           <Text style={{ color: theme.accent, fontWeight: '800', fontSize: 18 }}>
-            Delivered & paid {gbp(booking.contribution_pennies)} 🎉
+            Delivered & paid {gbp(booking.contribution_pennies)}
           </Text>
         ) : (
           <Text style={{ color: theme.muted }}>Nothing to do right now ({booking.status}).</Text>

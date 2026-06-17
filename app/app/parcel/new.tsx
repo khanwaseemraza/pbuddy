@@ -2,7 +2,7 @@
 // parcel -> contribution -> review). Cost-sharing framing throughout. Submits to
 // POST /parcels. Built on the design-system kit (components/kit.tsx).
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { api, ApiError, gbp, type Corridor } from '../../src/lib/api';
@@ -171,11 +171,24 @@ export default function NewParcel() {
           <Field label={pricingMode === 'auction' ? 'Maximum contribution (£)' : 'Contribution (£)'}>
             <Input value={contribGbp} onChangeText={setContribGbp} placeholder="20.00" keyboardType="decimal-pad" />
           </Field>
-          <Chip
-            label={ack ? '☑  No prohibited items — open for inspection' : '☐  No prohibited items — open for inspection'}
-            active={ack}
-            onPress={() => setAck(!ack)}
-          />
+          <Pressable onPress={() => setAck(!ack)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 6,
+                borderWidth: 2,
+                borderColor: ack ? theme.accent : theme.border,
+                backgroundColor: ack ? theme.accent : 'transparent',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 12,
+              }}
+            >
+              {ack ? <Text style={{ color: theme.accentText, fontWeight: '900', fontSize: 13 }}>✓</Text> : null}
+            </View>
+            <Text style={{ color: theme.text, flex: 1 }}>No prohibited items — open for inspection</Text>
+          </Pressable>
         </>
       )}
 

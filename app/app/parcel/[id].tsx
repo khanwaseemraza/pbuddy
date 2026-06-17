@@ -134,7 +134,6 @@ export default function ParcelDetail() {
             </>
           ) : bids.length === 0 ? (
             <EmptyState
-              emoji="🧭"
               title="No bids yet"
               subtitle="Travellers heading along your route will appear here. We’ll notify you the moment one bids."
             />

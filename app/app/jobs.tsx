@@ -42,7 +42,7 @@ export default function Jobs() {
           <Skeleton height={96} />
         </>
       ) : jobs.length === 0 ? (
-        <EmptyState emoji="🚚" title="No jobs yet" subtitle="Bid on a parcel from one of your trips — accepted bids become jobs here." />
+        <EmptyState title="No jobs yet" subtitle="Bid on a parcel from one of your trips — accepted bids become jobs here." />
       ) : (
         <FlatList
           data={jobs}

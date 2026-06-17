@@ -44,7 +44,6 @@ export default function TripDetail() {
         </>
       ) : matches.length === 0 ? (
         <EmptyState
-          emoji="📦"
           title="No matching parcels yet"
           subtitle="We’ll surface parcels heading your way as senders post them. Check back closer to your trip."
         />

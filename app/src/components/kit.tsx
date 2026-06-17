@@ -85,12 +85,22 @@ export function SummaryRow({ label, value, strong }: { label: string; value: str
   );
 }
 
-export function EmptyState({ emoji, title, subtitle }: { emoji: string; title: string; subtitle?: string }) {
+export function EmptyState({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <View style={{ alignItems: 'center', paddingVertical: 48, paddingHorizontal: 24 }}>
-      <Text style={{ fontSize: 40, marginBottom: 12 }}>{emoji}</Text>
+      {/* Restrained monochrome accent — no emoji. */}
+      <View style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: theme.border, marginBottom: 16 }} />
       <Text style={{ color: theme.text, fontWeight: '700', fontSize: 16, textAlign: 'center' }}>{title}</Text>
       {subtitle ? <Text style={{ color: theme.muted, marginTop: 6, textAlign: 'center', lineHeight: 20 }}>{subtitle}</Text> : null}
+    </View>
+  );
+}
+
+// A numbered step badge (1, 2, 3…) — premium alternative to emoji bullets.
+export function StepNumber({ n }: { n: number }) {
+  return (
+    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: theme.accent, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: theme.accentText, fontWeight: '800' }}>{n}</Text>
     </View>
   );
 }

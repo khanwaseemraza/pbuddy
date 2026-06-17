@@ -37,14 +37,14 @@ export default function Parcels() {
       </View>
 
       {error ? (
-        <EmptyState emoji="⚠️" title="Couldn’t load your parcels" subtitle="Check your connection and try again." />
+        <EmptyState title="Couldn’t load your parcels" subtitle="Check your connection and try again." />
       ) : !parcels ? (
         <>
           <Skeleton height={96} />
           <Skeleton height={96} />
         </>
       ) : parcels.length === 0 ? (
-        <EmptyState emoji="📦" title="No parcels yet" subtitle="Post your first parcel and travellers on your route can bid to carry it." />
+        <EmptyState title="No parcels yet" subtitle="Post your first parcel and travellers on your route can bid to carry it." />
       ) : (
         <FlatList
           data={parcels}

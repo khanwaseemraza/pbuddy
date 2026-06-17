@@ -8,7 +8,7 @@ import { Link, Redirect, useRouter, type Href } from 'expo-router';
 import { useAuth } from '../src/auth/AuthProvider';
 import { api, gbp, type Corridor } from '../src/lib/api';
 import { Chip } from '../src/components/ui';
-import { Card, ScreenTitle, StatusPill } from '../src/components/kit';
+import { Card, ScreenTitle, StatusPill, StepNumber } from '../src/components/kit';
 import { theme } from '../src/theme';
 
 // Representative intercity distances (km) for the seeded corridors — drives the
@@ -19,10 +19,10 @@ const CORRIDOR_KM: Record<string, number> = {
   'London <-> Leeds': 310,
 };
 
-const STEPS: { emoji: string; title: string; body: string }[] = [
-  { emoji: '📦', title: 'Post your parcel', body: 'Pick a route, add pickup & drop-off, set a contribution.' },
-  { emoji: '🧭', title: 'A traveller carries it', body: 'Someone already making the trip bids to take it along.' },
-  { emoji: '🤝', title: 'Hand-off & done', body: 'QR/OTP hand-off; the contribution is released on delivery.' },
+const STEPS: { title: string; body: string }[] = [
+  { title: 'Post your parcel', body: 'Pick a route, add pickup & drop-off, set a contribution.' },
+  { title: 'A traveller carries it', body: 'Someone already making the trip bids to take it along.' },
+  { title: 'Hand-off & done', body: 'QR/OTP hand-off; the contribution is released on delivery.' },
 ];
 
 export default function Index() {
@@ -113,8 +113,8 @@ export default function Index() {
         {STEPS.map((s, i) => (
           <Card key={i} style={{ marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontSize: 26, marginRight: 14 }}>{s.emoji}</Text>
-              <View style={{ flex: 1 }}>
+              <StepNumber n={i + 1} />
+              <View style={{ flex: 1, marginLeft: 14 }}>
                 <Text style={{ color: theme.text, fontWeight: '800' }}>{s.title}</Text>
                 <Text style={{ color: theme.muted, marginTop: 2, lineHeight: 19 }}>{s.body}</Text>
               </View>

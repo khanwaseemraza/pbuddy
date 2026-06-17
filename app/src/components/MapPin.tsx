@@ -17,7 +17,10 @@ export function MapPin({ lat, lng }: { lat: number; lng: number }) {
         justifyContent: 'center',
       }}
     >
-      <Text style={{ color: theme.accent, fontWeight: '700' }}>📍 Location confirmed</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: theme.accent, marginRight: 8 }} />
+        <Text style={{ color: theme.accent, fontWeight: '700' }}>Location confirmed</Text>
+      </View>
       <Text style={{ color: theme.muted, marginTop: 4 }}>
         {lat.toFixed(4)}, {lng.toFixed(4)}
       </Text>
