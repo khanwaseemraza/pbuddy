@@ -897,12 +897,12 @@ EPICS = [
              "ac": ["Multi-step wizard with progress + back/next", "Per-step validation; clear review screen",
                     "Contribution framed as cost-sharing (framing-clean)"],
              "verify": "Walk the wizard end-to-end; a parcel is posted with correct data."},
-            {"code": "E20-S3", "summary": "Sender: ranked bids review + accept + escrow fund", "status": "To Do",
+            {"code": "E20-S3", "summary": "Sender: ranked bids review + accept + escrow fund", "status": "In Review",
              "context": "Traveller bid cards (trust score, rating, ETA, transport, contribution) ranked; accept -> "
                         "fund escrow with a clear price breakdown.",
              "ac": ["Ranked bid cards with trust/ETA/price", "Accept + fund with itemised breakdown"],
              "verify": "Accept a bid and fund; booking advances."},
-            {"code": "E20-S4", "summary": "Live tracking screen (status timeline + map + hand-off)", "status": "To Do",
+            {"code": "E20-S4", "summary": "Live tracking screen (status timeline + map + hand-off)", "status": "In Review",
              "context": "Booking detail as a tracking view: status timeline, map, participant info, hand-off "
                         "codes, live updates (Firestore mirror + poll).",
              "ac": ["Status timeline reflects lifecycle", "Map + participant + hand-off codes shown live"],
