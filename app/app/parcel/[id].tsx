@@ -7,7 +7,7 @@ import { useAuth } from '../../src/auth/AuthProvider';
 import { api, gbp, type BidSummary, type HandoffCodes } from '../../src/lib/api';
 import { useLiveBooking } from '../../src/lib/useLiveBooking';
 import { QrCode } from '../../src/components/QrCode';
-import { Card, EmptyState, ScreenTitle, Skeleton, StatusPill, SummaryRow } from '../../src/components/kit';
+import { Card, EmptyState, ScreenTitle, Skeleton, StatusPill, StatusTimeline, SummaryRow } from '../../src/components/kit';
 import { theme } from '../../src/theme';
 
 interface Charges {
@@ -75,12 +75,25 @@ export default function ParcelDetail() {
 
       {codes && accepted ? (
         <>
-          <ScreenTitle title="Booked & funded 🎉" subtitle={`${accepted.traveller_name ?? 'Your traveller'} is carrying your parcel.`} />
-          {live ? (
-            <View style={{ marginBottom: 16 }}>
-              <StatusPill label={`● Live · ${live.status}`} tone="accent" />
-            </View>
-          ) : null}
+          <ScreenTitle title="Track your parcel" subtitle={`${accepted.traveller_name ?? 'Your traveller'} is carrying your parcel.`} />
+
+          {(() => {
+            const s = live?.status ?? 'funded';
+            const bad = s === 'refunded' || s === 'cancelled' || s === 'disputed';
+            return (
+              <Card style={{ marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <Text style={{ color: theme.text, fontWeight: '800' }}>Delivery progress</Text>
+                  <StatusPill label={bad ? s : `● Live · ${s}`} tone={bad ? 'danger' : 'accent'} />
+                </View>
+                {bad ? (
+                  <Text style={{ color: theme.muted }}>This booking is {s}. Any held funds are released back to you.</Text>
+                ) : (
+                  <StatusTimeline status={s} />
+                )}
+              </Card>
+            );
+          })()}
 
           <Card style={{ alignItems: 'center' }}>
             <Text style={{ color: theme.muted, marginBottom: 16, textAlign: 'center' }}>

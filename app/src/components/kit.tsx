@@ -91,6 +91,60 @@ export function Skeleton({ height = 64, style }: { height?: number; style?: View
   return <View style={[{ height, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.06)', marginBottom: 12 }, style]} />;
 }
 
+// Live delivery timeline (DPD/Uber-style). Highlights progress along the booking
+// lifecycle from the current status.
+const LIFECYCLE = ['claimed', 'funded', 'picked_up', 'delivered', 'released'];
+const TIMELINE_STEPS = [
+  { key: 'funded', label: 'Funded — ready for pickup' },
+  { key: 'picked_up', label: 'Picked up — in transit' },
+  { key: 'delivered', label: 'Delivered' },
+  { key: 'released', label: 'Completed — contribution released' },
+];
+
+export function StatusTimeline({ status }: { status: string }) {
+  const cur = LIFECYCLE.indexOf(status);
+  return (
+    <View>
+      {TIMELINE_STEPS.map((s, i) => {
+        const idx = LIFECYCLE.indexOf(s.key);
+        const done = cur >= idx;
+        const active = cur === idx;
+        const last = i === TIMELINE_STEPS.length - 1;
+        return (
+          <View key={s.key} style={{ flexDirection: 'row' }}>
+            <View style={{ alignItems: 'center', marginRight: 12 }}>
+              <View
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  backgroundColor: done ? theme.accent : 'transparent',
+                  borderWidth: done ? 0 : 2,
+                  borderColor: theme.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {done ? <Text style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>✓</Text> : null}
+              </View>
+              {!last ? <View style={{ width: 2, flex: 1, minHeight: 26, backgroundColor: cur > idx ? theme.accent : theme.border }} /> : null}
+            </View>
+            <Text
+              style={{
+                color: done ? theme.text : theme.muted,
+                fontWeight: active ? '800' : '600',
+                paddingBottom: last ? 0 : 20,
+              }}
+            >
+              {s.label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export function StepNav({
   onBack,
   onNext,
