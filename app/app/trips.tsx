@@ -1,12 +1,11 @@
 // Traveller's trips list.
-import { useCallback } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useState } from 'react';
 import { useAuth } from '../src/auth/AuthProvider';
 import { api, gbp } from '../src/lib/api';
-import { GlassCard } from '../src/components/GlassCard';
 import { Button } from '../src/components/ui';
+import { Card, EmptyState, Skeleton, StatusPill } from '../src/components/kit';
 import { theme } from '../src/theme';
 
 interface TripRow {
@@ -43,9 +42,12 @@ export default function Trips() {
         <Button label="+ Post a trip" onPress={() => router.push('/trip/new')} />
       </View>
       {!trips ? (
-        <ActivityIndicator color={theme.accent} />
+        <>
+          <Skeleton height={96} />
+          <Skeleton height={96} />
+        </>
       ) : trips.length === 0 ? (
-        <Text style={{ color: theme.muted }}>No trips yet — post one to start carrying.</Text>
+        <EmptyState emoji="🧭" title="No trips yet" subtitle="Post a journey you’re already taking and carry parcels along the way." />
       ) : (
         <FlatList
           data={trips}
@@ -53,18 +55,18 @@ export default function Trips() {
           renderItem={({ item }) => (
             <Link href={`/trip/${item.id}`} asChild>
               <Pressable>
-                <GlassCard style={{ marginBottom: 12 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: theme.text, fontWeight: '700', fontSize: 16 }}>{item.corridor}</Text>
-                    <Text style={{ color: theme.accent, fontWeight: '700' }}>{item.transport_mode}</Text>
+                <Card style={{ marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Text style={{ color: theme.text, fontWeight: '800', fontSize: 16, flex: 1, paddingRight: 12 }}>{item.corridor}</Text>
+                    <StatusPill label={item.transport_mode} tone="accent" />
                   </View>
-                  <Text style={{ color: theme.muted, marginTop: 4 }}>
+                  <Text style={{ color: theme.muted, marginTop: 6 }}>
                     {item.direction} · {new Date(item.depart_at).toLocaleDateString()}
                   </Text>
                   <Text style={{ color: theme.muted, marginTop: 4 }}>
                     {gbp(item.remaining_pennies)} of {gbp(item.journey_cost_pennies)} headroom left
                   </Text>
-                </GlassCard>
+                </Card>
               </Pressable>
             </Link>
           )}

@@ -1,10 +1,10 @@
 // Traveller's jobs — bookings where you're carrying.
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { Link, Stack, useFocusEffect } from 'expo-router';
 import { useAuth } from '../src/auth/AuthProvider';
 import { api, gbp } from '../src/lib/api';
-import { GlassCard } from '../src/components/GlassCard';
+import { Card, EmptyState, Skeleton, StatusPill, statusTone } from '../src/components/kit';
 import { theme } from '../src/theme';
 
 interface BookingRow {
@@ -37,9 +37,12 @@ export default function Jobs() {
       <Stack.Screen options={{ headerShown: false }} />
       <Text style={{ color: theme.text, fontSize: 26, fontWeight: '800', marginBottom: 16 }}>My jobs</Text>
       {!jobs ? (
-        <ActivityIndicator color={theme.accent} />
+        <>
+          <Skeleton height={96} />
+          <Skeleton height={96} />
+        </>
       ) : jobs.length === 0 ? (
-        <Text style={{ color: theme.muted }}>No jobs yet — bid on a parcel from one of your trips.</Text>
+        <EmptyState emoji="🚚" title="No jobs yet" subtitle="Bid on a parcel from one of your trips — accepted bids become jobs here." />
       ) : (
         <FlatList
           data={jobs}
@@ -47,18 +50,18 @@ export default function Jobs() {
           renderItem={({ item }) => (
             <Link href={`/job/${item.id}`} asChild>
               <Pressable>
-                <GlassCard style={{ marginBottom: 12 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: theme.text, fontWeight: '700', fontSize: 16 }}>{item.title}</Text>
-                    <Text style={{ color: theme.accent, fontWeight: '700' }}>{item.status}</Text>
+                <Card style={{ marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Text style={{ color: theme.text, fontWeight: '800', fontSize: 16, flex: 1, paddingRight: 12 }}>{item.title}</Text>
+                    <StatusPill label={item.status} tone={statusTone(item.status)} />
                   </View>
-                  <Text style={{ color: theme.muted, marginTop: 4 }}>
+                  <Text style={{ color: theme.muted, marginTop: 6 }}>
                     {item.corridor} · {item.pickup_postcode} → {item.dropoff_postcode}
                   </Text>
                   <Text style={{ color: theme.muted, marginTop: 4 }}>
                     your contribution {gbp(item.contribution_pennies)}
                   </Text>
-                </GlassCard>
+                </Card>
               </Pressable>
             </Link>
           )}

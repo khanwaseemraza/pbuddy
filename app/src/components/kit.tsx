@@ -35,6 +35,14 @@ const TONES: Record<Tone, { bg: string; fg: string }> = {
   accent: { bg: 'rgba(255,90,95,0.12)', fg: theme.accent },
 };
 
+// Map a booking/parcel/trip status to a pill tone.
+export function statusTone(status: string): Tone {
+  if (['delivered', 'released', 'matched', 'completed', 'verified'].includes(status)) return 'success';
+  if (['disputed', 'refunded', 'cancelled', 'rejected'].includes(status)) return 'danger';
+  if (['funded', 'picked_up', 'claimed', 'in_transit', 'pending'].includes(status)) return 'accent';
+  return 'neutral';
+}
+
 export function StatusPill({ label, tone = 'neutral' }: { label: string; tone?: Tone }) {
   const c = TONES[tone];
   return (
