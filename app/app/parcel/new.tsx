@@ -187,7 +187,7 @@ export default function NewParcel() {
             >
               {ack ? <Text style={{ color: theme.accentText, fontWeight: '900', fontSize: 13 }}>✓</Text> : null}
             </View>
-            <Text style={{ color: theme.text, flex: 1 }}>No prohibited items — open for inspection</Text>
+            <Text style={{ color: theme.text, flex: 1 }}>I declare the contents — sealed, with no prohibited items</Text>
           </Pressable>
         </>
       )}

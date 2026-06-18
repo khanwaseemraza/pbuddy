@@ -26,6 +26,7 @@ export default function ParcelDetail() {
   const [charges, setCharges] = useState<Charges | null>(null);
   const [accepted, setAccepted] = useState<BidSummary | null>(null);
   const [bookingId, setBookingId] = useState<string>('');
+  const [insure, setInsure] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { booking: live } = useLiveBooking(bookingId, getToken);
 
@@ -57,7 +58,7 @@ export default function ParcelDetail() {
       const funded = await api.post<{ handoff_codes: HandoffCodes; charges: Charges }>(
         `/bookings/${booking.booking_id}/fund`,
         token,
-        { with_insurance: true },
+        { with_insurance: insure },
       );
       setAccepted(bid);
       setCharges(funded.charges);
@@ -124,6 +125,32 @@ export default function ParcelDetail() {
       ) : (
         <>
           <ScreenTitle title="Choose a traveller" subtitle="Travellers on your route have bid to carry your parcel." />
+
+          {bids && bids.length > 0 ? (
+            <Pressable onPress={() => setInsure(!insure)} style={{ marginBottom: 16 }}>
+              <Card>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 22, height: 22, borderRadius: 6, borderWidth: 2,
+                      borderColor: insure ? theme.accent : theme.border,
+                      backgroundColor: insure ? theme.accent : 'transparent',
+                      alignItems: 'center', justifyContent: 'center', marginRight: 12,
+                    }}
+                  >
+                    {insure ? <Text style={{ color: theme.accentText, fontWeight: '900', fontSize: 13 }}>✓</Text> : null}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: theme.text, fontWeight: '700' }}>Add parcel cover (optional)</Text>
+                    <Text style={{ color: theme.muted, fontSize: 13, marginTop: 2 }}>
+                      Extra protection for your item, added to the total you fund.
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+            </Pressable>
+          ) : null}
+
           {error ? <Text style={{ color: theme.danger, marginBottom: 12 }}>{error}</Text> : null}
 
           {!bids ? (

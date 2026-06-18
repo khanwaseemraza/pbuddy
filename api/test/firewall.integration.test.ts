@@ -75,9 +75,10 @@ before(async () => {
      ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified'`,
   );
   await pool.query(
-    `INSERT INTO users (firebase_uid, phone, kyc_status, is_traveler)
-     VALUES ('test-traveler','+440000000002','verified',true)
-     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified'`,
+    // Carrier-eligible: KYC + Right-to-Work verified (RTW now required for ALL buddies).
+    `INSERT INTO users (firebase_uid, phone, kyc_status, is_traveler, rtw_status)
+     VALUES ('test-traveler','+440000000002','verified',true,'verified')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified', rtw_status='verified'`,
   );
   await pool.query(
     `INSERT INTO users (firebase_uid, phone, kyc_status)
@@ -268,9 +269,9 @@ test('POST /parcels rejects a prohibited category', async () => {
 test('POST /trips creates a trip + ledger, and throttles past the weekly limit', async () => {
   // Fresh traveller to isolate the weekly counter.
   await pool.query(
-    `INSERT INTO users (firebase_uid, phone, kyc_status, is_traveler)
-     VALUES ('freq-traveler','+440000000010','verified',true)
-     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified'`,
+    `INSERT INTO users (firebase_uid, phone, kyc_status, is_traveler, rtw_status)
+     VALUES ('freq-traveler','+440000000010','verified',true,'verified')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified', rtw_status='verified'`,
   );
   const body = {
     corridor_id: corridorId, direction: 'outbound', transport_mode: 'train',
@@ -629,7 +630,7 @@ test('admin resolves a dispute with release (traveller paid)', async () => {
   assert.equal(bk.status, 'released');
 });
 
-// ---- Hand-off: open-box -> pickup(capture) -> dropoff(payout) (PBD-34/35/36) ----
+// ---- Hand-off: sealed pickup(capture) -> dropoff(payout) (PBD-34/35, PBD-137) ----
 
 async function fundBooking(bookingId: string) {
   const res = await app.inject({
@@ -640,7 +641,7 @@ async function fundBooking(bookingId: string) {
   return res.json().handoff_codes as { pickup_otp: string; dropoff_otp: string; pickup_qr: string };
 }
 
-test('full hand-off: open-box -> pickup captures -> dropoff pays out, then rate', async () => {
+test('full hand-off: sealed pickup captures -> dropoff pays out, then rate', async () => {
   // Ensure the traveller is a payout-ready Connect account.
   await pool.query(
     `UPDATE users SET stripe_connect_id='acct_test_handoff' WHERE firebase_uid='test-traveler'`);
@@ -648,14 +649,7 @@ test('full hand-off: open-box -> pickup captures -> dropoff pays out, then rate'
   const bookingId = await makeBooking(tripId, 2000);
   const codes = await fundBooking(bookingId);
 
-  // Open-box gate.
-  const ob = await app.inject({
-    method: 'POST', url: `/bookings/${bookingId}/open-box`,
-    headers: { authorization: 'Bearer test-traveler' },
-  });
-  assert.equal(ob.statusCode, 200, ob.body);
-
-  // Pickup: wrong code rejected, right code captures.
+  // Sealed-package model: no open-box step. Pickup: wrong code rejected, right code captures.
   const bad = await app.inject({
     method: 'POST', url: `/bookings/${bookingId}/pickup`,
     headers: { authorization: 'Bearer test-traveler' }, payload: { code: '000000' },
@@ -695,16 +689,58 @@ test('full hand-off: open-box -> pickup captures -> dropoff pays out, then rate'
   assert.ok(Number(trav.rating_count) >= 1);
 });
 
-test('pickup is blocked without an open-box inspection', async () => {
+test('carrier right-to-refuse: decline a funded booking cancels it + releases capacity', async () => {
   const tripId = await seedTripWithCap(5000);
   const bookingId = await makeBooking(tripId, 1800);
-  const codes = await fundBooking(bookingId);
-  const pick = await app.inject({
-    method: 'POST', url: `/bookings/${bookingId}/pickup`,
-    headers: { authorization: 'Bearer test-traveler' }, payload: { code: codes.pickup_otp },
+  await fundBooking(bookingId);
+  const committed = (await pool.query(
+    `SELECT committed_pennies FROM trip_capacity_ledger WHERE trip_id=$1`, [tripId])).rows[0];
+  assert.ok(Number(committed.committed_pennies) > 0);
+
+  const decline = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/decline`,
+    headers: { authorization: 'Bearer test-traveler' }, payload: { reason: 'not comfortable' },
   });
-  assert.equal(pick.statusCode, 409);
-  assert.equal(pick.json().error, 'open_box_required');
+  assert.equal(decline.statusCode, 200, decline.body);
+  assert.equal(decline.json().status, 'cancelled');
+
+  const after = (await pool.query(`SELECT status FROM bookings WHERE id=$1`, [bookingId])).rows[0];
+  assert.equal(after.status, 'cancelled');
+  const led = (await pool.query(
+    `SELECT committed_pennies FROM trip_capacity_ledger WHERE trip_id=$1`, [tripId])).rows[0];
+  assert.equal(Number(led.committed_pennies), 0); // capacity released
+});
+
+test('carrier eligibility: a non-RTW or student-visa user cannot post a trip', async () => {
+  // No RTW.
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status, rtw_status)
+     VALUES ('no-rtw','+440000000041','verified','not_started')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified', rtw_status='not_started', immigration_class='undeclared'`,
+  );
+  const noRtw = await app.inject({
+    method: 'POST', url: '/trips', headers: { authorization: 'Bearer no-rtw' },
+    payload: { corridor_id: corridorId, direction: 'outbound', transport_mode: 'train',
+               depart_at: new Date(Date.now() + 2 * 86400000).toISOString(),
+               journey_cost_pennies: 5000, journey_cost_source: 'self_declared' },
+  });
+  assert.equal(noRtw.statusCode, 403);
+  assert.equal(noRtw.json().error, 'rtw_required');
+
+  // Student visa, even if RTW somehow verified, cannot carry.
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status, rtw_status, immigration_class)
+     VALUES ('student-carry','+440000000042','verified','verified','student_visa')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified', rtw_status='verified', immigration_class='student_visa'`,
+  );
+  const student = await app.inject({
+    method: 'POST', url: '/trips', headers: { authorization: 'Bearer student-carry' },
+    payload: { corridor_id: corridorId, direction: 'outbound', transport_mode: 'train',
+               depart_at: new Date(Date.now() + 2 * 86400000).toISOString(),
+               journey_cost_pennies: 5000, journey_cost_source: 'self_declared' },
+  });
+  assert.equal(student.statusCode, 403);
+  assert.equal(student.json().error, 'student_cannot_carry');
 });
 
 // ---- KYC via Stripe Identity (PBD-28) ------------------------------------

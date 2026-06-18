@@ -76,6 +76,26 @@ export function requireKyc(req: FastifyRequest, reply: FastifyReply, done: () =>
   done();
 }
 
+/**
+ * Guard: require a user who is LAWFULLY ELIGIBLE TO CARRY. Per counsel, the
+ * 2026 platform RTW regime is courier-targeted and platform-liable, so EVERY
+ * buddy (not just Pro) must be Right-to-Work verified before carrying; and
+ * international students may not carry at all (the contested "going anyway"
+ * parcel defence does not apply to them). Enforced at both carrier entry points
+ * — posting a trip and placing a bid.
+ */
+export function requireCarrierEligible(req: FastifyRequest, reply: FastifyReply, done: () => void): void {
+  if (req.user?.immigration_class === 'student_visa') {
+    reply.code(403).send({ error: 'student_cannot_carry' });
+    return;
+  }
+  if (req.user?.rtw_status !== 'verified') {
+    reply.code(403).send({ error: 'rtw_required' });
+    return;
+  }
+  done();
+}
+
 /** Guard: require an admin (Firebase UID on the configured allowlist). */
 export function requireAdmin(req: FastifyRequest, reply: FastifyReply, done: () => void): void {
   if (!req.user || !config.adminUids.includes(req.user.firebase_uid)) {

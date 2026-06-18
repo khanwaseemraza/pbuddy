@@ -1,14 +1,16 @@
-// Hand-off: the QR/OTP flow that drives the escrow. The traveller confirms an
-// open-box inspection (gate), scans the pickup code (captures the held funds),
-// then scans the dropoff code (transfers the contribution to the traveller).
-// This is what makes the escrow autonomous — no admin involvement.
+// Hand-off: the QR/OTP flow that drives the escrow. The traveller scans the
+// pickup code (captures the held funds), then scans the dropoff code (transfers
+// the contribution). Per counsel, there is NO open-box inspection — the parcel
+// is sealed, the sender declares the contents, and the carrier's safeguard is a
+// RIGHT TO REFUSE (decline) before pickup, not opening the package.
 import type { FastifyInstance } from 'fastify';
 import { pool, withTransaction } from '../db.ts';
 import { authenticate, requireKyc } from '../middleware/auth.ts';
 import { writeAudit } from '../lib/audit.ts';
 import { mirrorBookingStatus } from '../lib/mirror.ts';
+import { releaseCapacity } from '../services/caps.ts';
 import { verifyCode } from '../services/handoff.ts';
-import { capturePaymentIntent, createTransfer } from '../lib/stripe.ts';
+import { capturePaymentIntent, cancelPaymentIntent, createTransfer } from '../lib/stripe.ts';
 
 interface CodeBody { code: string; geo_lat?: number; geo_lng?: number }
 
@@ -29,29 +31,44 @@ async function loadBookingForTraveller(bookingId: string, travelerId: string) {
 }
 
 export async function handoffRoutes(app: FastifyInstance): Promise<void> {
-  // ---- Open-box inspection (the gate) ----
-  app.post<{ Params: { id: string }; Body: { geo_lat?: number; geo_lng?: number } }>(
-    '/bookings/:id/open-box',
+  // ---- Carrier right-to-refuse: decline a booking before pickup ----
+  // The carrier never opens the parcel; if unwilling to carry, they decline,
+  // which cancels the booking, releases the cost-sharing capacity, and unwinds
+  // any escrow hold. This preserves the innocent-carrier defence.
+  app.post<{ Params: { id: string }; Body: { reason?: string } }>(
+    '/bookings/:id/decline',
     { preHandler: [authenticate, requireKyc] },
     async (req, reply) => {
-      const r = await loadBookingForTraveller(req.params.id, req.user!.id);
-      if ('error' in r) return reply.code(r.error === 'not_the_traveller' ? 403 : 404).send({ error: r.error });
-      if (r.booking.status !== 'funded') {
-        return reply.code(409).send({ error: 'not_inspectable', status: r.booking.status });
-      }
-      await pool.query(
-        `INSERT INTO handoff_events (booking_id, type, actor_id, checklist_version, geo_lat, geo_lng)
-         VALUES ($1, 'open_box_confirmed', $2, 1, $3, $4)`,
-        [r.booking.id, req.user!.id, req.body?.geo_lat ?? null, req.body?.geo_lng ?? null],
-      );
-      await writeAudit({
-        eventType: 'OPEN_BOX_CONFIRMED',
-        userId: req.user!.id,
-        bookingId: r.booking.id,
-        parcelId: r.booking.parcel_id,
-        payload: { checklist_version: 1 },
+      const result = await withTransaction(async (tx) => {
+        const { rows } = await tx.query(
+          `SELECT b.id, b.traveler_id, b.status, b.trip_id, b.contribution_pennies,
+                  bd.bid_pieces, p.id AS payment_id, p.state AS payment_state,
+                  p.stripe_payment_intent_id
+             FROM bookings b
+             JOIN bids bd ON bd.id = b.bid_id
+             LEFT JOIN payments p ON p.booking_id = b.id
+            WHERE b.id = $1 FOR UPDATE OF b`,
+          [req.params.id],
+        );
+        const b = rows[0];
+        if (!b) return { http: 404, body: { error: 'booking_not_found' } as const };
+        if (b.traveler_id !== req.user!.id) return { http: 403, body: { error: 'not_the_traveller' } as const };
+        if (!['claimed', 'funded'].includes(b.status)) {
+          return { http: 409, body: { error: 'not_declinable', status: b.status } as const };
+        }
+        if (b.payment_state === 'authorized') {
+          await cancelPaymentIntent(b.stripe_payment_intent_id);
+          await tx.query(`UPDATE payments SET state = 'refunded' WHERE id = $1`, [b.payment_id]);
+        }
+        await tx.query(`UPDATE bookings SET status = 'cancelled' WHERE id = $1`, [b.id]);
+        await releaseCapacity(tx, b.trip_id, b.contribution_pennies, b.bid_pieces);
+        return { http: 200, body: { booking_id: b.id, status: 'cancelled', declined: true }, ok: true } as const;
       });
-      return reply.send({ booking_id: r.booking.id, open_box: 'confirmed' });
+      if ('ok' in result && result.ok) {
+        void mirrorBookingStatus(req.params.id);
+        await writeAudit({ eventType: 'CARRIER_DECLINED', userId: req.user!.id, bookingId: req.params.id });
+      }
+      return reply.code(result.http).send(result.body);
     },
   );
 
@@ -67,11 +84,7 @@ export async function handoffRoutes(app: FastifyInstance): Promise<void> {
       if (!verifyCode(req.body?.code, { qrToken: b.pickup_qr_token, otpHash: b.pickup_otp_hash }, b.id)) {
         return reply.code(401).send({ error: 'invalid_code' });
       }
-      const inspected = await pool.query(
-        `SELECT 1 FROM handoff_events WHERE booking_id = $1 AND type = 'open_box_confirmed' AND success`,
-        [b.id],
-      );
-      if (!inspected.rowCount) return reply.code(409).send({ error: 'open_box_required' });
+      // No open-box inspection gate (sealed-package model) — go straight to capture.
       if (b.payment_state !== 'authorized') {
         return reply.code(409).send({ error: 'payment_not_authorized', state: b.payment_state });
       }

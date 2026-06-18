@@ -2,7 +2,7 @@
 // accept. Every attempt writes a CAP_CHECK to the compliance audit log.
 import type { FastifyInstance } from 'fastify';
 import { pool, withTransaction } from '../db.ts';
-import { authenticate, requireKyc } from '../middleware/auth.ts';
+import { authenticate, requireKyc, requireCarrierEligible } from '../middleware/auth.ts';
 import { writeAudit } from '../lib/audit.ts';
 import { evaluateCap, proBypassAllowed, reserveCapacity, type ProGate } from '../services/caps.ts';
 import { mirrorBookingStatus } from '../lib/mirror.ts';
@@ -17,7 +17,7 @@ export async function bidRoutes(app: FastifyInstance): Promise<void> {
   // ---- Traveller places a bid on a parcel for one of their trips ----
   app.post<{ Params: { parcelId: string }; Body: PlaceBidBody }>(
     '/parcels/:parcelId/bids',
-    { preHandler: [authenticate, requireKyc] },
+    { preHandler: [authenticate, requireKyc, requireCarrierEligible] },
     async (req, reply) => {
       const traveler = req.user!;
       const { parcelId } = req.params;

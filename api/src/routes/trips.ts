@@ -4,7 +4,7 @@
 // travellers; Pro Buddy (gates satisfied) is exempt.
 import type { FastifyInstance } from 'fastify';
 import { pool } from '../db.ts';
-import { authenticate, requireKyc } from '../middleware/auth.ts';
+import { authenticate, requireKyc, requireCarrierEligible } from '../middleware/auth.ts';
 import { writeAudit } from '../lib/audit.ts';
 import { proBypassAllowed, type ProGate } from '../services/caps.ts';
 import { evaluateFrequency, type FrequencyLimits } from '../services/frequency.ts';
@@ -49,7 +49,7 @@ export async function tripRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: CreateTripBody }>(
     '/trips',
-    { preHandler: [authenticate, requireKyc] },
+    { preHandler: [authenticate, requireKyc, requireCarrierEligible] },
     async (req, reply) => {
       const user = req.user!;
       const b = req.body;

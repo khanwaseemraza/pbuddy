@@ -1,5 +1,7 @@
-// Job (booking) hand-off for the traveller: confirm open-box, scan/enter the
-// pickup code (captures escrow), then the dropoff code (releases the payout).
+// Job (booking) hand-off for the traveller. Sealed-package model: no open-box
+// inspection — the sender declares the contents, the carrier may decline (right
+// to refuse), then scans the pickup code (captures escrow) and the dropoff code
+// (releases the payout).
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
@@ -14,7 +16,6 @@ export default function Job() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getToken } = useAuth();
   const { booking, refresh } = useLiveBooking(id!, getToken);
-  const [openBoxDone, setOpenBoxDone] = useState(false);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,6 @@ export default function Job() {
       const token = await getToken();
       if (!token) return;
       await api.post(`/bookings/${id}${path}`, token, body);
-      if (path === '/open-box') setOpenBoxDone(true);
       setCode('');
       await refresh();
     } catch (e) {
@@ -58,20 +58,20 @@ export default function Job() {
       <GlassCard>
         {booking.status === 'claimed' ? (
           <Text style={{ color: theme.muted }}>Waiting for the sender to fund the escrow.</Text>
-        ) : booking.status === 'funded' && !openBoxDone ? (
+        ) : booking.status === 'funded' ? (
           <>
-            <Text style={{ color: theme.text, fontWeight: '700', marginBottom: 6 }}>Open-box inspection</Text>
+            <Text style={{ color: theme.text, fontWeight: '700', marginBottom: 6 }}>Sealed parcel</Text>
             <Text style={{ color: theme.muted, marginBottom: 14 }}>
-              Check the unsealed parcel: contents match, nothing prohibited (no drugs, weapons, cash, stolen goods).
+              The sender has declared the contents and that there are no prohibited items. The parcel stays sealed —
+              you don’t open it. If you’re not willing to carry it, you can decline.
             </Text>
-            <Button label="I’ve inspected — contents OK" onPress={() => call('/open-box')} busy={busy} />
-          </>
-        ) : booking.status === 'funded' && openBoxDone ? (
-          <>
             <Text style={{ color: theme.text, fontWeight: '700', marginBottom: 10 }}>Pickup — enter the sender’s code</Text>
             <Input value={code} onChangeText={setCode} placeholder="6-digit code or QR token" autoCapitalize="none" />
             <View style={{ marginTop: 12 }}>
               <Button label="Confirm pickup" onPress={() => call('/pickup', { code })} busy={busy} />
+            </View>
+            <View style={{ marginTop: 10 }}>
+              <Button label="Decline this parcel" variant="ghost" onPress={() => call('/decline')} busy={busy} />
             </View>
           </>
         ) : booking.status === 'picked_up' ? (
