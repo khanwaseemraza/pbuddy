@@ -966,12 +966,12 @@ EPICS = [
                         "when, how'); soften any labour framing (e.g. bare 'Carry & earn').",
              "ac": ["Sender, buddy, operator copy follow the positioning doc", "Passes the guardrail lint"],
              "verify": "Copy review against the say/never-say list passes."},
-            {"code": "E21-S3", "summary": "Sealed-package + sender declaration + right-to-refuse (replace open-box)", "status": "To Do",
+            {"code": "E21-S3", "summary": "Sealed-package + sender declaration + right-to-refuse (replace open-box)", "status": "In Review",
              "context": "COUNSEL-GATED. Inspection gives the carrier knowledge and erodes the innocent-carrier "
                         "defence; the sealed + declared + right-to-refuse model is safer. Reverses E2-S8.",
              "ac": ["Pickup no longer requires an open-box inspection", "Sender contents declaration + carrier right-to-refuse recorded"],
              "verify": "Solicitor signs off; pickup flow updated + audited."},
-            {"code": "E21-S4", "summary": "Right-to-Work for ALL buddies at onboarding + substitute re-check", "status": "To Do",
+            {"code": "E21-S4", "summary": "Right-to-Work for ALL buddies at onboarding + substitute re-check", "status": "In Review",
              "context": "COUNSEL-GATED. 2026 platform regime is courier-targeted, platform-liable (£60k/worker + "
                         "criminal). Verify every carrier, not just Pro; re-check substitutes (the substitution "
                         "right is exactly what the Home Office polices).",
@@ -983,7 +983,7 @@ EPICS = [
                         "framing works AGAINST classification — favour supplementary, going-anyway carriers.",
              "ac": ["Platform mechanics reviewed against worker-status tests with counsel"],
              "verify": "Counsel pressure-tests the classification structure; gaps closed."},
-            {"code": "E21-S6", "summary": "Two-layer liability terms + optional sender-paid insurance bolt-on", "status": "To Do",
+            {"code": "E21-S6", "summary": "Two-layer liability terms + optional sender-paid insurance bolt-on", "status": "In Review",
              "context": "COUNSEL-GATED. CRA-safe terms (can't fully exclude own-negligence) + a separate "
                         "discretionary goodwill layer (Uber's structure). Make cover an OPTIONAL sender bolt-on, "
                         "not mandatory; never market 'fully insured'.",
@@ -995,7 +995,7 @@ EPICS = [
                         "positioning, never a compliance argument.",
              "ac": ["Methodology documented", "Per-delivery avoided-CO2 shown with an honest van comparison"],
              "verify": "A reviewer can reproduce the CO2 figure from the methodology."},
-            {"code": "E21-S8", "summary": "No international students as carriers (broaden the lock)", "status": "To Do",
+            {"code": "E21-S8", "summary": "No international students as carriers (broaden the lock)", "status": "In Review",
              "context": "COUNSEL-GATED. Extend the student restriction from Pro-only to carrying at all — only "
                         "people who can lawfully do this carry. Removes the contested 'going anyway' parcel defence.",
              "ac": ["Student-visa users cannot carry on any tier"],
