@@ -58,4 +58,75 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
 
   // Current user profile (requires a provisioned user).
   app.get('/users/me', { preHandler: [authenticate] }, async (req) => req.user);
+
+  // ---- GDPR DSAR: self-serve data export (E16-S1) ----
+  // Returns everything we hold that is personal to this user, in one JSON
+  // bundle. Records a DSAR_EXPORT audit entry so the right is auditable.
+  app.get('/users/me/export', { preHandler: [authenticate] }, async (req) => {
+    const id = req.user!.id;
+    const [profile, parcels, trips, bids, bookings, payments, consent] = await Promise.all([
+      pool.query(
+        `SELECT id, phone, email, full_name, kyc_status, tier, immigration_class,
+                rtw_status, is_sender, is_traveler, trust_score, rating_count,
+                legal_version, legal_accepted_at, created_at, erased_at
+           FROM users WHERE id = $1`, [id]),
+      pool.query(`SELECT id, title, description, category, status, pickup_postcode,
+                         dropoff_postcode, declared_value_pennies, created_at
+                    FROM parcels WHERE sender_id = $1 ORDER BY created_at`, [id]),
+      pool.query(`SELECT id, corridor_id, direction, transport_mode, depart_at,
+                         journey_cost_pennies, status, created_at
+                    FROM trips WHERE traveler_id = $1 ORDER BY created_at`, [id]),
+      pool.query(`SELECT id, parcel_id, trip_id, bid_contribution_pennies, status, created_at
+                    FROM bids WHERE traveler_id = $1 ORDER BY created_at`, [id]),
+      pool.query(`SELECT id, parcel_id, trip_id, contribution_pennies, status,
+                         claimed_at, delivered_at,
+                         (sender_id = $1) AS as_sender, (traveler_id = $1) AS as_traveller
+                    FROM bookings WHERE sender_id = $1 OR traveler_id = $1
+                   ORDER BY claimed_at`, [id]),
+      pool.query(`SELECT p.id, p.gross_pennies, p.platform_fee_pennies, p.state, p.created_at
+                    FROM payments p JOIN bookings b ON b.id = p.booking_id
+                   WHERE b.sender_id = $1 OR b.traveler_id = $1 ORDER BY p.created_at`, [id]),
+      pool.query(`SELECT event_type, payload, created_at FROM compliance_audit_log
+                   WHERE user_id = $1 AND event_type = 'CONSENT_RECORDED'
+                   ORDER BY created_at`, [id]),
+    ]);
+    await writeAudit({ eventType: 'DSAR_EXPORT', userId: id });
+    return {
+      generated_at: new Date().toISOString(),
+      profile: profile.rows[0] ?? null,
+      parcels: parcels.rows,
+      trips: trips.rows,
+      bids: bids.rows,
+      bookings: bookings.rows,
+      payments: payments.rows,
+      consent: consent.rows,
+      note: 'Card numbers are never stored; payments are handled by Stripe. The '
+        + 'immutable compliance audit trail is retained under our legal-obligation basis.',
+    };
+  });
+
+  // ---- GDPR DSAR: account erasure (E16-S1) ----
+  // Anonymises PII on the user row and closes the account. The immutable
+  // compliance_audit_log is retained (legal-obligation basis) but no longer
+  // points at identifying data. Refused while money is in flight so escrow can't
+  // be stranded.
+  app.post('/users/me/erasure', { preHandler: [authenticate] }, async (req, reply) => {
+    const id = req.user!.id;
+    const { rows: active } = await pool.query(
+      `SELECT count(*)::int AS n FROM bookings
+        WHERE (sender_id = $1 OR traveler_id = $1)
+          AND status IN ('claimed','funded','picked_up')`, [id]);
+    if (active[0].n > 0) {
+      return reply.code(409).send({ error: 'active_bookings_block_erasure', active: active[0].n });
+    }
+    await pool.query(
+      `UPDATE users
+          SET full_name = NULL, email = NULL,
+              phone = 'erased:' || id,
+              firebase_uid = 'erased:' || id,
+              erased_at = now()
+        WHERE id = $1 AND erased_at IS NULL`, [id]);
+    await writeAudit({ eventType: 'DSAR_ERASURE', userId: id });
+    return reply.code(200).send({ erased: true });
+  });
 }

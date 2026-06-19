@@ -9,6 +9,7 @@ import { writeAudit } from '../lib/audit.ts';
 import { lookupPostcode } from '../lib/postcodes.ts';
 import { haversineKm } from '../services/matching.ts';
 import { deriveSizeBand, suggestContribution } from '../services/pricing.ts';
+import { screenListing } from '../services/moderation.ts';
 
 // Categories explicitly disallowed (mirrors the prohibited-items declaration).
 const PROHIBITED_CATEGORIES = new Set([
@@ -55,6 +56,22 @@ export async function parcelRoutes(app: FastifyInstance): Promise<void> {
       }
       if (PROHIBITED_CATEGORIES.has(b.category)) {
         return reply.code(400).send({ error: 'prohibited_category', category: b.category });
+      }
+
+      // Content moderation backstop for the sealed-package model: screen the
+      // sender's free text for prohibited-item signals before the listing is ever
+      // created. A hit blocks the post and is recorded for the safety trail.
+      const moderation = screenListing(b.title, b.description);
+      if (moderation.flagged) {
+        await writeAudit({
+          eventType: 'LISTING_MODERATED',
+          userId: user.id,
+          payload: { action: 'blocked', hits: moderation.hits },
+        });
+        return reply.code(400).send({
+          error: 'listing_flagged',
+          categories: [...new Set(moderation.hits.map((h) => h.category))],
+        });
       }
 
       // Corridor allowlist (domestic-only).

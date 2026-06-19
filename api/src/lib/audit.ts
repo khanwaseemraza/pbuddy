@@ -18,7 +18,10 @@ export type AuditEventType =
   | 'TIER_TRANSITION'
   | 'CONSENT_RECORDED'
   | 'CARRIER_DECLINED'
-  | 'SUBSTITUTE_APPOINTED';
+  | 'SUBSTITUTE_APPOINTED'
+  | 'LISTING_MODERATED'
+  | 'DSAR_EXPORT'
+  | 'DSAR_ERASURE';
 
 export interface AuditEntry {
   eventType: AuditEventType;

@@ -949,6 +949,86 @@ test('consent: provisioning with accept_legal records the version + an audit ent
   assert.equal(audit.rows[0].n, 1);
 });
 
+// ---- Content moderation (E14-S4) -----------------------------------------
+
+test('moderation: a listing whose text signals a prohibited item is blocked', async () => {
+  const res = await app.inject({
+    method: 'POST', url: '/parcels',
+    headers: { authorization: 'Bearer test-sender' },
+    payload: parcelPayload({ title: 'Antique shotgun, carefully wrapped' }),
+  });
+  assert.equal(res.statusCode, 400, res.body);
+  assert.equal(res.json().error, 'listing_flagged');
+  assert.ok(res.json().categories.includes('weapons'));
+
+  // And it was recorded for the safety trail.
+  const a = await pool.query(
+    `SELECT count(*)::int AS n FROM compliance_audit_log WHERE event_type='LISTING_MODERATED'`);
+  assert.ok(a.rows[0].n >= 1);
+});
+
+test('moderation: a clean listing posts normally', async () => {
+  const res = await app.inject({
+    method: 'POST', url: '/parcels',
+    headers: { authorization: 'Bearer test-sender' },
+    payload: parcelPayload({ title: 'Birthday gift for my sister' }),
+  });
+  assert.equal(res.statusCode, 201, res.body);
+});
+
+// ---- GDPR DSAR: export + erasure (E16-S1) --------------------------------
+
+test('DSAR: a user can export everything we hold about them', async () => {
+  const tripId = await seedTripWithCap(5000);
+  await makeBooking(tripId, 1500); // gives the sender a parcel + booking to export
+  const res = await app.inject({
+    method: 'GET', url: '/users/me/export', headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  const body = res.json();
+  assert.ok(body.profile && body.profile.phone);
+  assert.ok(Array.isArray(body.parcels) && body.parcels.length >= 1);
+  assert.ok(Array.isArray(body.bookings));
+  const a = await pool.query(
+    `SELECT count(*)::int AS n FROM compliance_audit_log
+      WHERE event_type='DSAR_EXPORT' AND user_id=$1`, [body.profile.id]);
+  assert.ok(a.rows[0].n >= 1);
+});
+
+test('DSAR: erasure is refused while a booking is in progress', async () => {
+  const tripId = await seedTripWithCap(5000);
+  await makeBooking(tripId, 1200); // an active (claimed) booking for test-sender
+  const res = await app.inject({
+    method: 'POST', url: '/users/me/erasure', headers: { authorization: 'Bearer test-sender' },
+  });
+  assert.equal(res.statusCode, 409, res.body);
+  assert.equal(res.json().error, 'active_bookings_block_erasure');
+});
+
+test('DSAR: erasure anonymises PII and closes the account', async () => {
+  // A throwaway user with no in-flight bookings.
+  const created = await pool.query(
+    `INSERT INTO users (firebase_uid, phone, full_name, email, kyc_status)
+     VALUES ('erase-me','+440000000077','Jane Doe','jane@example.com','verified')
+     ON CONFLICT (firebase_uid) DO UPDATE SET phone='+440000000077', full_name='Jane Doe',
+       email='jane@example.com', kyc_status='verified', erased_at=NULL
+     RETURNING id`,
+  );
+  const uid = created.rows[0].id;
+  const res = await app.inject({
+    method: 'POST', url: '/users/me/erasure', headers: { authorization: 'Bearer erase-me' },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  assert.equal(res.json().erased, true);
+
+  const u = (await pool.query(
+    `SELECT full_name, email, firebase_uid, erased_at FROM users WHERE id=$1`, [uid])).rows[0];
+  assert.equal(u.full_name, null);
+  assert.equal(u.email, null);
+  assert.match(u.firebase_uid, /^erased:/);
+  assert.ok(u.erased_at);
+});
+
 // ---- Push notifications (PBD-72) -----------------------------------------
 
 test('push: a funded booking notifies only the traveller’s registered device', async () => {

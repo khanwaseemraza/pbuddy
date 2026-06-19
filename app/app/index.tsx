@@ -22,7 +22,7 @@ const CORRIDOR_KM: Record<string, number> = {
 const STEPS: { title: string; body: string }[] = [
   { title: 'Post your parcel', body: 'Pick a route, add pickup & drop-off, set a contribution.' },
   { title: 'A traveller carries it', body: 'Someone already making the trip bids to take it along.' },
-  { title: 'Hand-off & done', body: 'QR/OTP hand-off; the contribution is released on delivery.' },
+  { title: 'Hand-off & done', body: 'QR/OTP hand-off; the contribution is released on a successful drop-off.' },
 ];
 
 export default function Index() {
@@ -75,12 +75,12 @@ export default function Index() {
         Send parcels with people already going your way.
       </Text>
       <Text style={{ color: theme.muted, fontSize: 16, marginTop: 12, lineHeight: 23 }}>
-        Cost-sharing parcel delivery between UK cities. Cheaper for senders, covers travellers’ costs — never a courier fee.
+        Cost-sharing parcel sending between UK cities. Cheaper for senders, covers travellers’ costs — never a courier fee.
       </Text>
 
       <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
         <Cta label="Send a parcel" onPress={() => router.push('/parcel/new')} filled />
-        <Cta label="Carry & earn" onPress={() => router.push('/trip/new')} />
+        <Cta label="Carry & cover costs" onPress={() => router.push('/trip/new')} />
       </View>
 
       {/* Estimator */}

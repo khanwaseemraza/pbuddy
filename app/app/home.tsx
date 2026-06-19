@@ -49,6 +49,7 @@ export default function Home() {
           <Text style={{ color: theme.muted, marginTop: 2 }}>{user.phoneNumber}</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 16 }}>
+          <Link href={'/account' as Href} style={{ color: theme.muted }}>Account</Link>
           <Link href={'/legal' as Href} style={{ color: theme.muted }}>Legal</Link>
           <Pressable onPress={signOut}>
             <Text style={{ color: theme.muted }}>Sign out</Text>
@@ -58,7 +59,7 @@ export default function Home() {
 
       <View style={{ flexDirection: 'row', gap: 12, marginTop: 28 }}>
         <HubButton href="/parcels" label="Send a parcel" filled />
-        <HubButton href="/trips" label="Carry & earn" />
+        <HubButton href="/trips" label="Carry & cover costs" />
       </View>
       <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
         <HubButton href="/jobs" label="My jobs" />

@@ -1,4 +1,4 @@
-// Carry & earn — a guided wizard to post a trip you're already taking. Your
+// Carry & cover costs — a guided wizard to post a trip you're already taking. Your
 // declared journey cost becomes the cost-sharing cap on what you can accept.
 import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';

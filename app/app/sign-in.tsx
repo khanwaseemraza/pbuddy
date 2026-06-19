@@ -45,7 +45,7 @@ export default function SignIn() {
     <View style={{ flex: 1, backgroundColor: theme.bg, padding: 24, justifyContent: 'center' }}>
       <Text style={{ color: theme.accent, fontSize: 34, fontWeight: '800' }}>PBuddy</Text>
       <Text style={{ color: theme.muted, fontSize: 16, marginTop: 4, marginBottom: 32 }}>
-        Cost-sharing parcel delivery. Sign in with your phone.
+        Cost-sharing parcel sending. Sign in with your phone.
       </Text>
 
       <GlassCard>

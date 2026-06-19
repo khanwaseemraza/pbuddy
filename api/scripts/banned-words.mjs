@@ -19,7 +19,7 @@ const ROOTS = [
 ];
 
 // Banned when describing the traveller's contribution (cost-sharing framing).
-const FRAMING = [/\bdelivery fee\b/i, /\bearnings?\b/i, /\bwages?\b/i, /\bsalary\b/i, /\bincome\b/i];
+const FRAMING = [/\bdelivery fee\b/i, /\bearn(?:s|ed|ing|ings)?\b/i, /\bwages?\b/i, /\bsalary\b/i, /\bincome\b/i];
 
 // Banned positioning — affirmative courier/logistics/labour/carriage language.
 // Phrased to catch the dangerous usage, NOT legitimate negations like

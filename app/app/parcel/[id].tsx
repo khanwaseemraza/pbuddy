@@ -84,7 +84,7 @@ export default function ParcelDetail() {
             return (
               <Card style={{ marginBottom: 16 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <Text style={{ color: theme.text, fontWeight: '800' }}>Delivery progress</Text>
+                  <Text style={{ color: theme.text, fontWeight: '800' }}>Hand-off progress</Text>
                   <StatusPill label={bad ? s : `● Live · ${s}`} tone={bad ? 'danger' : 'accent'} />
                 </View>
                 {bad ? (
