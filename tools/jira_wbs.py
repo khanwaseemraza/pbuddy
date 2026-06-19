@@ -977,7 +977,7 @@ EPICS = [
                         "right is exactly what the Home Office polices).",
              "ac": ["RTW required to carry at all (not Pro-only)", "Substitution triggers a fresh RTW check"],
              "verify": "Solicitor signs off; onboarding gates carrying on RTW for all buddies."},
-            {"code": "E21-S5", "summary": "Self-employment-in-substance controls", "status": "To Do",
+            {"code": "E21-S5", "summary": "Self-employment-in-substance controls", "status": "In Review",
              "context": "COUNSEL-GATED. Genuine substitution right, no imposed pricing, no obligation to accept, "
                         "no control over how/when they travel, no punitive deactivation. Note: full-time-only "
                         "framing works AGAINST classification — favour supplementary, going-anyway carriers.",
@@ -989,7 +989,7 @@ EPICS = [
                         "not mandatory; never market 'fully insured'.",
              "ac": ["Solicitor-drafted two-layer liability", "Insurance optional at checkout, not forced"],
              "verify": "Terms reviewed; checkout offers optional cover."},
-            {"code": "E21-S7", "summary": "Quantified, substantiated green claims (CO2 vs van)", "status": "To Do",
+            {"code": "E21-S7", "summary": "Quantified, substantiated green claims (CO2 vs van)", "status": "In Review",
              "context": "ASA/CMA Green Claims Code: accurate, substantiated, not misleading. Surface a defensible "
                         "per-delivery avoided-CO2 figure (vs a dedicated van), 'fewer vans' as the lead message — "
                         "positioning, never a compliance argument.",
