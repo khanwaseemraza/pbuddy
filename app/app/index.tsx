@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { useFonts } from 'expo-font';
 import { useAuth } from '../src/auth/AuthProvider';
 
 type FAName = React.ComponentProps<typeof FontAwesome6>['name'];
@@ -54,6 +55,10 @@ const MAXW = 1180;
 
 export default function Index() {
   const { user, loading } = useAuth();
+  // Preload the FontAwesome web font so icons render instead of tofu squares
+  // (Expo's static web export doesn't auto-register the icon @font-face).
+  const [fontsLoaded, fontError] = useFonts(FontAwesome6.font);
+  const iconsReady = fontsLoaded || !!fontError;
   const router = useRouter();
   const { width } = useWindowDimensions();
   const narrow = width < 900;
@@ -69,7 +74,7 @@ export default function Index() {
     if (y != null) scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
   };
 
-  if (loading) {
+  if (loading || !iconsReady) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg }}>
         <ActivityIndicator color={C.coral} />
