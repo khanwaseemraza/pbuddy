@@ -134,7 +134,9 @@ EPICS = [
             },
             {
                 "code": "E2-S5", "summary": "Two-tier model: Casual/Pro DB constraints", "status": "Done",
-                "context": "Casual Buddy = safe harbour; Pro Buddy = uncapped but gated by RTW + hire&reward.",
+                "context": "[SUPERSEDED by E21] Historical tier model. CURRENT TRUTH: RTW is required for "
+                           "ALL buddies (not Pro-only); student-visa users cannot carry on ANY tier (E21-S4/S8). "
+                           "Casual Buddy = capped/safe-harbour; Pro Buddy = uncapped, still gated by RTW.",
                 "ac": ["CHECK students_cannot_be_pro blocks student_visa + pro_buddy",
                        "CHECK pro_requires_rtw blocks pro_buddy without verified RTW",
                        "proBypassAllowed() bypasses the cap only when gates are satisfied"],
@@ -161,10 +163,12 @@ EPICS = [
             },
             {
                 "code": "E2-S8", "summary": "Open-box gate (pickup blocked without inspection)", "status": "Done",
-                "context": "Traveller must inspect unsealed contents before escrow arms.",
-                "ac": ["A booking cannot reach picked_up without an open_box_confirmed event",
-                       "Enforced by DB trigger as the structural backstop"],
-                "verify": "Attempt to set status=picked_up with no open-box event -> exception.",
+                "context": "[SUPERSEDED by E21-S3 — DO NOT DESIGN AGAINST THIS] Open-box inspection has been "
+                           "REMOVED. CURRENT TRUTH: sealed-package model — the parcel stays sealed, the sender "
+                           "declares the contents, and the carrier's safeguard is the RIGHT TO REFUSE before pickup, "
+                           "never opening the parcel. There is no inspection step anywhere.",
+                "ac": ["Historical only — the open_box trigger was dropped in migration 0009"],
+                "verify": "n/a (removed)",
                 "refs": ["db/migrations/0001_init.sql"],
             },
             {
@@ -302,10 +306,10 @@ EPICS = [
         "code": "E5",
         "summary": "Hand-off & Trust (Phase 3)",
         "status": "To Do",
-        "context": "Secure QR/OTP hand-off at pickup and dropoff, the open-box inspection step, and ratings "
-                   "feeding a trust score.",
+        "context": "Secure QR/OTP hand-off at pickup and dropoff and ratings feeding a trust score. "
+                   "[NOTE: the open-box inspection step was REMOVED by E21-S3 — sealed model + right-to-refuse.]",
         "ac": ["Pickup/dropoff confirmed by QR (OTP fallback).",
-               "Open-box inspection required before pickup.",
+               "Carrier may refuse a sealed parcel before pickup (no inspection).",
                "Ratings update a visible trust score."],
         "children": [
             {"code": "E5-S1", "summary": "QR token generation + scanner", "status": "Done",
@@ -317,9 +321,11 @@ EPICS = [
              "ac": ["Hashed OTP issued; entry validates equivalently to QR"],
              "verify": "OTP path advances booking when QR unavailable."},
             {"code": "E5-S3", "summary": "Open-box inspection UI + event logging", "status": "Done",
-             "context": "Traveller confirms contents before accepting; gate enforced server-side (E2-S8).",
-             "ac": ["Checklist (versioned) completed before pickup scan", "OPEN_BOX_CONFIRMED audit + handoff_event written"],
-             "verify": "Cannot scan pickup before completing the checklist."},
+             "context": "[SUPERSEDED by E21-S3 — REMOVED] There is no open-box inspection. Replaced by the "
+                        "sealed-package model: sender declaration + carrier right-to-refuse before pickup. Do not "
+                        "show any 'inspect contents' UI.",
+             "ac": ["Historical only — superseded by sealed model"],
+             "verify": "n/a (removed)"},
             {"code": "E5-S4", "summary": "Ratings -> trust score", "status": "Done",
              "context": "Post-delivery ratings update rating_avg and trust_score.",
              "ac": ["One review per booking per rater", "trust_score recomputed; surfaced on profile + ranking"],
@@ -395,10 +401,12 @@ EPICS = [
         "code": "E8",
         "summary": "Pro Buddy Enablement (fast-follow)",
         "status": "To Do",
-        "context": "Unlock the uncapped Pro Buddy tier safely: Right-to-Work verification, hire & reward "
-                   "insurance for car drivers, and self-employed onboarding. Gated and audited. Students excluded.",
-        "ac": ["Pro Buddy activates only with verified RTW (+ hire&reward for car).",
-               "Students can never enter Pro Buddy.",
+        "context": "[PARTIALLY SUPERSEDED by E21] Unlock the uncapped Pro Buddy tier safely via Right-to-Work "
+                   "verification + self-employed onboarding. CURRENT TRUTH: RTW now applies to ALL buddies (E21-S4), "
+                   "students cannot carry on ANY tier (E21-S8), and the active scope is public transport / bicycle / "
+                   "foot only — NO motor vehicles for now (E21-S10), so car hire&reward is out of scope.",
+        "ac": ["Pro Buddy activates only with verified RTW.",
+               "Student-visa users can never carry (any tier).",
                "Every tier transition is audited."],
         "children": [
             {"code": "E8-S1", "summary": "Right-to-Work verification integration", "status": "Done",
@@ -406,12 +414,16 @@ EPICS = [
              "ac": ["RTW provider integrated; rtw_status flips to verified", "pro_requires_rtw constraint satisfied on upgrade"],
              "verify": "Upgrade blocked until RTW verified."},
             {"code": "E8-S2", "summary": "Hire & reward insurance (Zego) for car drivers", "status": "Done",
-             "context": "Car-driving Pros need hire & reward cover.",
-             "ac": ["hire_reward_policy_id captured for car Pros", "proBypass blocked for car without it"],
-             "verify": "Car Pro cannot bypass cap without a policy."},
+             "context": "[OUT OF SCOPE per E21-S10] Cars/motor vehicles are not in the current scope (public "
+                        "transport / bicycle / foot only). Keep the mechanism dormant; do not surface car options in "
+                        "any UI or design.",
+             "ac": ["Dormant — no motor-vehicle carrying in current scope"],
+             "verify": "n/a (out of scope)"},
             {"code": "E8-S3", "summary": "Self-employed onboarding + tax messaging", "status": "Done",
-             "context": "Pro is taxable self-employment — explicit acknowledgment + correct messaging (no trading-allowance framing).",
-             "ac": ["self_employed_ack_at captured", "Pro receipts use earning/self-employment language, not cost-sharing"],
+             "context": "Pro is taxable self-employment — explicit acknowledgment + correct messaging (no trading-allowance framing). "
+                        "[NOTE: 'earning/self-employment' wording is allowed ONLY on the Pro self-employment path; the public/marketing "
+                        "and Casual paths stay strictly cost-sharing — never 'earn/earnings/fee'. The framing lint enforces this.]",
+             "ac": ["self_employed_ack_at captured", "Pro self-employment path uses self-employment language; cost-sharing everywhere else"],
              "verify": "Pro onboarding records the acknowledgment."},
             {"code": "E8-S4", "summary": "Tier transition flow + audit", "status": "Done",
              "context": "Casual -> Pro upgrade with all gates + TIER_TRANSITION audit.",
@@ -434,9 +446,11 @@ EPICS = [
              "context": "Recruit a roster of regular travellers + a sender waitlist on two campuses.",
              "ac": ["Seed traveller roster live", "Sender waitlist captured"],
              "verify": "First corridor has both supply and demand seeded."},
-            {"code": "E9-S2", "summary": "Concierge liquidity + courier backstop", "status": "In Progress",
-             "context": "Manually match early bookings; cover with a backup courier if no traveller.",
-             "ac": ["Concierge matching process documented + run", "Backstop covers unmatched demand"],
+            {"code": "E9-S2", "summary": "Concierge liquidity (seed-side backstop)", "status": "In Progress",
+             "context": "Manually match early bookings by recruiting more verified buddies onto the corridor when "
+                        "supply is thin. [Internal ops only — never positioned as a courier/logistics service; the "
+                        "marketplace stays buddy-to-sender. No 'courier' language anywhere user-facing.]",
+             "ac": ["Concierge matching process documented + run", "Thin corridors get more seeded buddies"],
              "verify": "No early sender experiences a dead end."},
             {"code": "E9-S3", "summary": "Metrics dashboard (match rate, margin, CAC)", "status": "Done",
              "context": "Instrument time-to-match, % matched, contribution margin/parcel, CAC vs LTV, compliance health.",
@@ -937,6 +951,22 @@ EPICS = [
              "ac": ["Wizards load + run without auth (corridors fetched publicly)",
                     "The commit action redirects to sign-in when logged out, money/PII stay gated + KYC"],
              "verify": "Logged out, walk the send-a-parcel wizard; Post prompts sign-in."},
+            {"code": "E20-S10", "summary": "Brand & design-system rules (CANONICAL — design agents read this)",
+             "status": "In Review",
+             "context": "The single source of truth for any design work (human or AI design agent). HARD RULES: "
+                        "(1) NO emojis anywhere — use FontAwesome icons for iconography (premium brand). "
+                        "(2) NO gradients on buttons or fills — solid colours only (primary = coral #FF5A5F, white text). "
+                        "(3) Airbnb palette + Apple glassmorphism: light warm background, translucent white cards "
+                        "(rgba white ~0.7) with soft shadow + subtle blur, 1px light border, generous radius. "
+                        "(4) Clean sans typography, no decorative fonts. "
+                        "(5) Copy obeys the say/never-say list (E21-S1 lint): cost-sharing / contribution / Buddy / "
+                        "sender / escrow / Right-to-Work / sealed parcel + right to refuse / optional cover — NEVER "
+                        "courier / logistics / delivery fee / earn / earnings / wage / 'fully insured' / 'guaranteed'. "
+                        "(6) Reflect the CURRENT model (E21), not historical tickets.",
+             "ac": ["No emoji in any product/marketing surface; FontAwesome icon set used",
+                    "No gradient buttons/fills; solid coral primary",
+                    "Glassmorphism per the Airbnb+Apple system; passes the framing lint"],
+             "verify": "A design reviewed against this ticket has zero emoji, zero gradients, and passes banned-words."},
         ],
     },
     # =====================================================================
@@ -1006,6 +1036,17 @@ EPICS = [
                         "the carriage and dissolves conditions-of-carriage risk — pursue as upside, not launch-gating.",
              "ac": ["Operator + government one-pagers", "Pilot outreach list"],
              "verify": "Positioning kit drafted; first operator approached."},
+            {"code": "E21-S10", "summary": "Greener scope: public transport / bicycle / foot only (defer motor vehicles)",
+             "status": "In Review",
+             "context": "Current carrying scope is DOMESTIC UK on PUBLIC TRANSPORT (train / bus / coach), BICYCLE, or "
+                        "ON FOOT only — NO motor vehicles / cars for now. This is the greener, low-carbon positioning "
+                        "(active + shared travel that's already happening) and it keeps us clear of hire-and-reward / "
+                        "operator-licensing risk. Green claims must follow the CMA methodology (E21-S7): comparative + "
+                        "substantiated, never an unqualified absolute ('zero-carbon'). Car hire&reward (E8-S2) is dormant.",
+             "ac": ["Transport modes surfaced in UI = public transport, bicycle, foot only",
+                    "No motor-vehicle / car option anywhere user-facing",
+                    "Any green claim is comparative + substantiated per the methodology"],
+             "verify": "Trip wizard offers only public/bike/foot modes; no car path is reachable."},
         ],
     },
 ]
