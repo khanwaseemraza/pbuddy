@@ -5,7 +5,8 @@
   },
   "hosting": {
     "public": "app/dist",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "//ignore": "public is the built dist/ — Expo emits icon-font assets under assets/node_modules/@expo/vector-icons/...; do NOT ignore node_modules here or the fonts 404 (icons render as tofu).",
+    "ignore": ["firebase.json", "**/.*"],
     "rewrites": [
       { "source": "/api/**", "run": { "serviceId": "pbuddy-api", "region": "europe-west2" } },
       { "source": "**", "destination": "/index.html" }
