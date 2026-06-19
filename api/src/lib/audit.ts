@@ -17,7 +17,8 @@ export type AuditEventType =
   | 'TAX_DISCLOSURE_SHOWN'
   | 'TIER_TRANSITION'
   | 'CONSENT_RECORDED'
-  | 'CARRIER_DECLINED';
+  | 'CARRIER_DECLINED'
+  | 'SUBSTITUTE_APPOINTED';
 
 export interface AuditEntry {
   eventType: AuditEventType;

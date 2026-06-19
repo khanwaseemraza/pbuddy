@@ -6,7 +6,16 @@ import { pool } from '../db.ts';
 
 // The user-facing pages (the rest of legal_copy holds inline framing snippets
 // used elsewhere in the product). The highest active version of each is served.
-export const LEGAL_PAGES = ['terms', 'privacy', 'prohibited_items', 'cost_sharing.explainer'] as const;
+export const LEGAL_PAGES = [
+  'terms',
+  'carrier_agreement',
+  'liability_policy',
+  'insurance_optional',
+  'prohibited_items',
+  'privacy',
+  'cost_sharing.explainer',
+  'green_claims',
+] as const;
 
 export async function legalRoutes(app: FastifyInstance): Promise<void> {
   // List the current legal documents (key + version) — drives the consent screen.

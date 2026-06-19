@@ -46,9 +46,13 @@ export interface LegalDoc {
 // Human labels for the legal document keys.
 export const LEGAL_TITLES: Record<string, string> = {
   terms: 'Terms of Service',
-  privacy: 'Privacy Policy',
+  carrier_agreement: 'Buddy Carrier Agreement',
+  liability_policy: 'Liability Policy',
+  insurance_optional: 'Optional Parcel Cover',
   prohibited_items: 'Prohibited Items',
+  privacy: 'Privacy Policy',
   'cost_sharing.explainer': 'How cost-sharing works',
+  green_claims: 'Green Claims Methodology',
 };
 
 export interface Corridor {

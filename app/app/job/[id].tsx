@@ -73,6 +73,10 @@ export default function Job() {
             <View style={{ marginTop: 10 }}>
               <Button label="Decline this parcel" variant="ghost" onPress={() => call('/decline')} busy={busy} />
             </View>
+            <Text style={{ color: theme.muted, fontSize: 12, marginTop: 12, lineHeight: 17 }}>
+              You can also appoint another verified Buddy to carry this in your place before pickup —
+              your right of substitution. See the Buddy Carrier Agreement.
+            </Text>
           </>
         ) : booking.status === 'picked_up' ? (
           <>

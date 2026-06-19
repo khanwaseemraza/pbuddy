@@ -711,6 +711,83 @@ test('carrier right-to-refuse: decline a funded booking cancels it + releases ca
   assert.equal(Number(led.committed_pennies), 0); // capacity released
 });
 
+test('right of substitution: a carrier can hand a booking to another verified Buddy', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 1800);
+
+  // A substitute Buddy: identity + RTW verified, payout-onboarded, with their
+  // OWN open trip on the same corridor + direction and enough capacity.
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status, is_traveler, rtw_status, stripe_connect_id)
+     VALUES ('sub-buddy','+440000000050','verified',true,'verified','acct_test_sub')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified', rtw_status='verified',
+       immigration_class='undeclared', stripe_connect_id='acct_test_sub'`,
+  );
+  const subId = (await pool.query(`SELECT id FROM users WHERE firebase_uid='sub-buddy'`)).rows[0].id;
+  const subTrip = (await pool.query(
+    `INSERT INTO trips (traveler_id, corridor_id, direction, transport_mode, depart_at,
+                        journey_cost_pennies, journey_cost_source)
+     VALUES ($1,$2,'outbound','train', now() + interval '2 days', 5000, 'api_estimate')
+     RETURNING id`,
+    [subId, corridorId],
+  )).rows[0].id;
+
+  const sub = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/substitute`,
+    headers: { authorization: 'Bearer test-traveler' },
+    payload: { substitute_trip_id: subTrip },
+  });
+  assert.equal(sub.statusCode, 200, sub.body);
+  assert.equal(sub.json().substituted, true);
+
+  // Booking now belongs to the substitute + their trip; the chain is recorded.
+  const b = (await pool.query(
+    `SELECT traveler_id, trip_id, substituted_from_user_id FROM bookings WHERE id=$1`, [bookingId])).rows[0];
+  assert.equal(b.traveler_id, subId);
+  assert.equal(b.trip_id, subTrip);
+  assert.ok(b.substituted_from_user_id);
+
+  // Capacity moved: original trip released, substitute trip reserved.
+  const orig = (await pool.query(
+    `SELECT committed_pennies FROM trip_capacity_ledger WHERE trip_id=$1`, [tripId])).rows[0];
+  const dest = (await pool.query(
+    `SELECT committed_pennies FROM trip_capacity_ledger WHERE trip_id=$1`, [subTrip])).rows[0];
+  assert.equal(Number(orig.committed_pennies), 0);
+  assert.equal(Number(dest.committed_pennies), 1800);
+});
+
+test('substitution is refused if the substitute is not Right-to-Work verified', async () => {
+  const tripId = await seedTripWithCap(5000);
+  const bookingId = await makeBooking(tripId, 1500);
+  await pool.query(
+    `INSERT INTO users (firebase_uid, phone, kyc_status, is_traveler, rtw_status, stripe_connect_id)
+     VALUES ('sub-no-rtw','+440000000051','verified',true,'not_started','acct_test_nortw')
+     ON CONFLICT (firebase_uid) DO UPDATE SET kyc_status='verified', rtw_status='not_started',
+       immigration_class='undeclared', stripe_connect_id='acct_test_nortw'`,
+  );
+  const subId = (await pool.query(`SELECT id FROM users WHERE firebase_uid='sub-no-rtw'`)).rows[0].id;
+  const subTrip = (await pool.query(
+    `INSERT INTO trips (traveler_id, corridor_id, direction, transport_mode, depart_at,
+                        journey_cost_pennies, journey_cost_source)
+     VALUES ($1,$2,'outbound','train', now() + interval '2 days', 5000, 'api_estimate')
+     RETURNING id`,
+    [subId, corridorId],
+  )).rows[0].id;
+
+  const sub = await app.inject({
+    method: 'POST', url: `/bookings/${bookingId}/substitute`,
+    headers: { authorization: 'Bearer test-traveler' },
+    payload: { substitute_trip_id: subTrip },
+  });
+  assert.equal(sub.statusCode, 409, sub.body);
+  assert.equal(sub.json().error, 'substitute_rtw_required');
+
+  // The original booking is untouched.
+  const b = (await pool.query(`SELECT traveler_id FROM bookings WHERE id=$1`, [bookingId])).rows[0];
+  const orig = (await pool.query(`SELECT id FROM users WHERE firebase_uid='test-traveler'`)).rows[0];
+  assert.equal(b.traveler_id, orig.id);
+});
+
 test('carrier eligibility: a non-RTW or student-visa user cannot post a trip', async () => {
   // No RTW.
   await pool.query(
@@ -838,11 +915,16 @@ test('legal: lists the active documents and serves a body', async () => {
   const list = await app.inject({ method: 'GET', url: '/legal' });
   assert.equal(list.statusCode, 200);
   const keys = list.json().documents.map((d: { key: string }) => d.key).sort();
-  assert.deepEqual(keys, ['cost_sharing.explainer', 'privacy', 'prohibited_items', 'terms']);
+  assert.deepEqual(keys, [
+    'carrier_agreement', 'cost_sharing.explainer', 'green_claims', 'insurance_optional',
+    'liability_policy', 'privacy', 'prohibited_items', 'terms',
+  ]);
 
+  // The active terms are the counsel-aligned v2 bundle.
   const terms = await app.inject({ method: 'GET', url: '/legal/terms' });
   assert.equal(terms.statusCode, 200);
   assert.equal(terms.json().key, 'terms');
+  assert.equal(terms.json().version, 2);
   assert.ok(terms.json().body.length > 0);
 
   const missing = await app.inject({ method: 'GET', url: '/legal/nope' });
@@ -856,7 +938,7 @@ test('consent: provisioning with accept_legal records the version + an audit ent
     payload: { phone: '+440000000099', accept_legal: true },
   });
   assert.equal(res.statusCode, 200, res.body);
-  assert.equal(res.json().legal_version, 1);
+  assert.equal(res.json().legal_version, 2);
   assert.ok(res.json().legal_accepted_at);
 
   const audit = await pool.query(

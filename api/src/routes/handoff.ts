@@ -8,7 +8,7 @@ import { pool, withTransaction } from '../db.ts';
 import { authenticate, requireKyc } from '../middleware/auth.ts';
 import { writeAudit } from '../lib/audit.ts';
 import { mirrorBookingStatus } from '../lib/mirror.ts';
-import { releaseCapacity } from '../services/caps.ts';
+import { releaseCapacity, reserveCapacity } from '../services/caps.ts';
 import { verifyCode } from '../services/handoff.ts';
 import { capturePaymentIntent, cancelPaymentIntent, createTransfer } from '../lib/stripe.ts';
 
@@ -67,6 +67,98 @@ export async function handoffRoutes(app: FastifyInstance): Promise<void> {
       if ('ok' in result && result.ok) {
         void mirrorBookingStatus(req.params.id);
         await writeAudit({ eventType: 'CARRIER_DECLINED', userId: req.user!.id, bookingId: req.params.id });
+      }
+      return reply.code(result.http).send(result.body);
+    },
+  );
+
+  // ---- Right of substitution: appoint another verified Buddy ----
+  // A genuine, exercisable substitution right is the strongest structural signal
+  // that a Buddy is an independent contractor rather than a worker of PBuddy
+  // (personal service is the irreducible core of worker status — Pimlico v Smith).
+  // The carrier names a substitute by passing one of the substitute's OWN trips
+  // on the same corridor + direction (the substitute is genuinely making the
+  // journey, so cost-sharing integrity is preserved). The only conditions are
+  // integrity conditions required by law: the substitute must be identity- and
+  // Right-to-Work-verified and payout-onboarded. Allowed before pickup only.
+  app.post<{ Params: { id: string }; Body: { substitute_trip_id?: string } }>(
+    '/bookings/:id/substitute',
+    { preHandler: [authenticate, requireKyc] },
+    async (req, reply) => {
+      const substituteTripId = req.body?.substitute_trip_id;
+      if (!substituteTripId) return reply.code(400).send({ error: 'substitute_trip_id_required' });
+
+      const result = await withTransaction(async (tx) => {
+        const { rows: bRows } = await tx.query(
+          `SELECT b.id, b.traveler_id, b.sender_id, b.status, b.trip_id,
+                  b.contribution_pennies, bd.bid_pieces, t.corridor_id, t.direction
+             FROM bookings b
+             JOIN bids bd ON bd.id = b.bid_id
+             JOIN trips t ON t.id = b.trip_id
+            WHERE b.id = $1 FOR UPDATE OF b`,
+          [req.params.id],
+        );
+        const b = bRows[0];
+        if (!b) return { http: 404, body: { error: 'booking_not_found' } as const };
+        if (b.traveler_id !== req.user!.id) return { http: 403, body: { error: 'not_the_traveller' } as const };
+        if (!['claimed', 'funded'].includes(b.status)) {
+          return { http: 409, body: { error: 'not_substitutable', status: b.status } as const };
+        }
+
+        // The substitute's nominated trip must exist, be open, be on the SAME
+        // corridor + direction, and belong to someone other than the current
+        // carrier and the sender.
+        const { rows: tRows } = await tx.query(
+          `SELECT t.id, t.traveler_id, t.corridor_id, t.direction, t.status,
+                  u.kyc_status, u.rtw_status, u.immigration_class, u.stripe_connect_id
+             FROM trips t JOIN users u ON u.id = t.traveler_id
+            WHERE t.id = $1`,
+          [substituteTripId],
+        );
+        const st = tRows[0];
+        if (!st) return { http: 404, body: { error: 'substitute_trip_not_found' } as const };
+        if (st.status !== 'open') return { http: 409, body: { error: 'substitute_trip_not_open' } as const };
+        if (st.corridor_id !== b.corridor_id || st.direction !== b.direction) {
+          return { http: 409, body: { error: 'substitute_route_mismatch' } as const };
+        }
+        if (st.traveler_id === b.traveler_id) return { http: 409, body: { error: 'substitute_is_self' } as const };
+        if (st.traveler_id === b.sender_id) return { http: 409, body: { error: 'substitute_is_sender' } as const };
+
+        // Integrity conditions on the substitute (the only permitted limits):
+        // identity + Right to Work verified, not a student, and payout-onboarded.
+        if (st.kyc_status !== 'verified') return { http: 409, body: { error: 'substitute_kyc_required' } as const };
+        if (st.immigration_class === 'student_visa') return { http: 409, body: { error: 'substitute_student_cannot_carry' } as const };
+        if (st.rtw_status !== 'verified') return { http: 409, body: { error: 'substitute_rtw_required' } as const };
+        if (!st.stripe_connect_id) return { http: 409, body: { error: 'substitute_not_onboarded' } as const };
+
+        // Move the cost-sharing capacity: release on the old trip, reserve on the
+        // substitute's trip (their own cap enforces the invariant for them too).
+        const decision = await reserveCapacity(tx, st.id, b.contribution_pennies, b.bid_pieces);
+        if (!decision.allowed) return { http: 409, body: { error: 'substitute_over_cap', cap: decision } as const };
+        await releaseCapacity(tx, b.trip_id, b.contribution_pennies, b.bid_pieces);
+
+        await tx.query(
+          `UPDATE bookings
+              SET trip_id = $2, traveler_id = $3,
+                  substituted_from_user_id = $4, substituted_at = now()
+            WHERE id = $1`,
+          [b.id, st.id, st.traveler_id, b.traveler_id],
+        );
+        return {
+          http: 200,
+          body: { booking_id: b.id, substituted: true, new_traveller_id: st.traveler_id, new_trip_id: st.id },
+          ok: true,
+          fromUserId: b.traveler_id as string,
+        } as const;
+      });
+
+      if ('ok' in result && result.ok) {
+        void mirrorBookingStatus(req.params.id);
+        await writeAudit({
+          eventType: 'SUBSTITUTE_APPOINTED',
+          userId: result.fromUserId,
+          bookingId: req.params.id,
+        });
       }
       return reply.code(result.http).send(result.body);
     },
