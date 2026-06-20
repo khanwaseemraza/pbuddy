@@ -1,15 +1,17 @@
 // Send a parcel — a guided, validated, multi-step wizard (route -> addresses ->
 // parcel -> contribution -> review). Cost-sharing framing throughout. Submits to
-// POST /parcels. Built on the design-system kit (components/kit.tsx).
+// POST /parcels. Built on the flow UI kit (components/flowkit.tsx).
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { api, ApiError, gbp, type Corridor } from '../../src/lib/api';
 import { AddressPicker, type PickedAddress } from '../../src/components/AddressPicker';
-import { Chip, Field, Input } from '../../src/components/ui';
-import { Card, ProgressBar, ScreenTitle, StepNav, SummaryRow } from '../../src/components/kit';
-import { theme } from '../../src/theme';
+import {
+  Checkbox, Field, FlowScreen, Glass, Pill, ProgressDots, ScreenHeading,
+  StepNav, SummaryRow, TextField, Divider,
+} from '../../src/components/flowkit';
+import { C } from '../../src/components/glass';
 
 const STEPS = ['Route', 'Addresses', 'Parcel', 'Contribution', 'Review'];
 
@@ -106,24 +108,24 @@ export default function NewParcel() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} contentContainerStyle={{ padding: 24, paddingTop: 64, paddingBottom: 48 }}>
+    <FlowScreen onBack={step > 0 ? () => setStep(step - 1) : () => router.back()}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ProgressBar step={step} total={STEPS.length} />
+      <ProgressDots step={step} total={STEPS.length} />
 
       {step === 0 && (
         <>
-          <ScreenTitle title="Where to?" subtitle="Pick the intercity route and direction for your parcel." />
+          <ScreenHeading title="Where's it going?" subtitle="Choose the route your parcel will travel, and which way." />
           <Field label="Route">
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {corridors.map((c) => (
-                <Chip key={c.id} label={c.display_name} active={c.id === corridorId} onPress={() => setCorridorId(c.id)} />
+                <Pill key={c.id} label={c.display_name} active={c.id === corridorId} onPress={() => setCorridorId(c.id)} />
               ))}
             </View>
           </Field>
           <Field label="Direction">
             <View style={{ flexDirection: 'row' }}>
-              <Chip label="Outbound" active={direction === 'outbound'} onPress={() => setDirection('outbound')} />
-              <Chip label="Return" active={direction === 'return'} onPress={() => setDirection('return')} />
+              <Pill label="Outbound" active={direction === 'outbound'} onPress={() => setDirection('outbound')} />
+              <Pill label="Return" active={direction === 'return'} onPress={() => setDirection('return')} />
             </View>
           </Field>
         </>
@@ -131,7 +133,7 @@ export default function NewParcel() {
 
       {step === 1 && (
         <>
-          <ScreenTitle title="Pickup & drop-off" subtitle="Enter UK postcodes — we validate and pin them on the map." />
+          <ScreenHeading title="Pickup & drop-off" subtitle="Enter the UK postcodes — we check them and pin them on the map." />
           <AddressPicker label="Pickup" onChange={setPickup} />
           <AddressPicker label="Drop-off" onChange={setDropoff} />
         </>
@@ -139,82 +141,63 @@ export default function NewParcel() {
 
       {step === 2 && (
         <>
-          <ScreenTitle title="About the parcel" subtitle="A quick description, its size, and what it’s worth." />
+          <ScreenHeading title="About the parcel" subtitle="A quick description, its size, and what it's worth." />
           <Field label="What is it?">
-            <Input value={title} onChangeText={setTitle} placeholder="e.g. Birthday gift" />
+            <TextField value={title} onChangeText={setTitle} placeholder="e.g. Birthday gift" />
           </Field>
           <Field label="Size">
             <View style={{ flexDirection: 'row' }}>
-              <Chip label="Small" active={size === 'S'} onPress={() => setSize('S')} />
-              <Chip label="Medium" active={size === 'M'} onPress={() => setSize('M')} />
-              <Chip label="Large" active={size === 'L'} onPress={() => setSize('L')} />
+              <Pill label="Small" active={size === 'S'} onPress={() => setSize('S')} />
+              <Pill label="Medium" active={size === 'M'} onPress={() => setSize('M')} />
+              <Pill label="Large" active={size === 'L'} onPress={() => setSize('L')} />
             </View>
           </Field>
-          <Field label="Declared value (£)">
-            <Input value={valueGbp} onChangeText={setValueGbp} placeholder="50.00" keyboardType="decimal-pad" />
+          <Field label="What's it worth? (£)">
+            <TextField value={valueGbp} onChangeText={setValueGbp} placeholder="50.00" keyboardType="decimal-pad" />
           </Field>
         </>
       )}
 
       {step === 3 && (
         <>
-          <ScreenTitle
+          <ScreenHeading
             title="Your contribution"
-            subtitle="This goes toward the traveller’s journey costs — capped to their own fare, never a payment for a service."
+            subtitle="You share part of your Buddy's journey cost — capped so it never goes above what the trip really costs."
           />
           <Field label="How is it set?">
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              <Chip label="Travellers bid" active={pricingMode === 'auction'} onPress={() => setPricingMode('auction')} />
-              <Chip label="Fixed amount" active={pricingMode === 'fixed'} onPress={() => setPricingMode('fixed')} />
+              <Pill label="Buddies bid" active={pricingMode === 'auction'} onPress={() => setPricingMode('auction')} />
+              <Pill label="Set a fixed amount" active={pricingMode === 'fixed'} onPress={() => setPricingMode('fixed')} />
             </View>
           </Field>
-          <Field label={pricingMode === 'auction' ? 'Maximum contribution (£)' : 'Contribution (£)'}>
-            <Input value={contribGbp} onChangeText={setContribGbp} placeholder="20.00" keyboardType="decimal-pad" />
+          <Field label={pricingMode === 'auction' ? 'Most you would share (£)' : 'Your contribution (£)'}>
+            <TextField value={contribGbp} onChangeText={setContribGbp} placeholder="20.00" keyboardType="decimal-pad" />
           </Field>
-          <Pressable onPress={() => setAck(!ack)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-            <View
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: 6,
-                borderWidth: 2,
-                borderColor: ack ? theme.accent : theme.border,
-                backgroundColor: ack ? theme.accent : 'transparent',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12,
-              }}
-            >
-              {ack ? <Text style={{ color: theme.accentText, fontWeight: '900', fontSize: 13 }}>✓</Text> : null}
-            </View>
-            <Text style={{ color: theme.text, flex: 1 }}>I declare the contents — sealed, with no prohibited items</Text>
-          </Pressable>
+          <View style={{ marginTop: 4 }}>
+            <Checkbox checked={ack} onToggle={() => setAck(!ack)} label="I've sealed my parcel and declare there are no prohibited items inside." />
+          </View>
         </>
       )}
 
       {step === 4 && (
         <>
-          <ScreenTitle title="Review & post" subtitle="Check the details — travellers will see this listing." />
-          <Card>
+          <ScreenHeading title="Review & post" subtitle="Check the details — Buddies on your route will see this." />
+          <Glass>
             <SummaryRow label="Route" value={`${corridorName} · ${direction}`} />
             <SummaryRow label="Pickup" value={pickup?.postcode ?? '—'} />
             <SummaryRow label="Drop-off" value={dropoff?.postcode ?? '—'} />
             <SummaryRow label="Parcel" value={`${title || '—'} · ${size}`} />
-            <SummaryRow label="Declared value" value={gbp(valuePennies)} />
-            <View style={{ height: 1, backgroundColor: theme.border, marginVertical: 6 }} />
-            <SummaryRow
-              label={pricingMode === 'auction' ? 'Max contribution' : 'Contribution'}
-              value={gbp(contribPennies)}
-              strong
-            />
-          </Card>
-          <Text style={{ color: theme.muted, fontSize: 13, marginTop: 12, lineHeight: 19 }}>
-            A traveller’s accepted contributions can never exceed their own verified journey cost — the platform enforces it.
+            <SummaryRow label="Value" value={gbp(valuePennies)} />
+            <Divider />
+            <SummaryRow label={pricingMode === 'auction' ? 'Most you would share' : 'Your contribution'} value={gbp(contribPennies)} strong />
+          </Glass>
+          <Text style={{ color: C.muted, fontSize: 13, marginTop: 12, lineHeight: 19 }}>
+            Your Buddy's contributions are always capped to their own journey cost — so you never overpay.
           </Text>
         </>
       )}
 
-      {error ? <Text style={{ color: theme.danger, marginTop: 16 }}>{error}</Text> : null}
+      {error ? <Text style={{ color: C.coralStatus, marginTop: 16 }}>{error}</Text> : null}
 
       <StepNav
         onBack={step > 0 ? () => setStep(step - 1) : undefined}
@@ -223,6 +206,6 @@ export default function NewParcel() {
         busy={busy}
         disabled={!stepValid}
       />
-    </ScrollView>
+    </FlowScreen>
   );
 }
