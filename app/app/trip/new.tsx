@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '../../src/auth/AuthProvider';
-import { api, ApiError, gbp, type Corridor } from '../../src/lib/api';
+import { api, ApiError, gbp, routeLabel, type Corridor } from '../../src/lib/api';
 import { Chip, Field, Input } from '../../src/components/ui';
 import { Card, ProgressBar, ScreenTitle, StepNav, SummaryRow } from '../../src/components/kit';
 import { theme } from '../../src/theme';
@@ -41,7 +41,7 @@ export default function NewTrip() {
   }, []);
 
   const costPennies = Math.round(parseFloat(costGbp || '0') * 100);
-  const corridorName = corridors.find((c) => c.id === corridorId)?.display_name ?? '—';
+  const corridorName = routeLabel(corridors.find((c) => c.id === corridorId)?.display_name ?? '—');
   const stepValid = [!!corridorId, /\d{4}-\d{2}-\d{2}/.test(date), costPennies > 0][step];
 
   async function onSubmit() {
@@ -85,7 +85,7 @@ export default function NewTrip() {
           <Field label="Route">
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {corridors.map((c) => (
-                <Chip key={c.id} label={c.display_name} active={c.id === corridorId} onPress={() => setCorridorId(c.id)} />
+                <Chip key={c.id} label={routeLabel(c.display_name)} active={c.id === corridorId} onPress={() => setCorridorId(c.id)} />
               ))}
             </View>
           </Field>

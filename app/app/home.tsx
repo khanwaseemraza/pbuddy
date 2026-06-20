@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { Link, Redirect, type Href } from 'expo-router';
 import { useAuth } from '../src/auth/AuthProvider';
-import { api, ApiError, type Corridor } from '../src/lib/api';
+import { api, ApiError, routeLabel, type Corridor } from '../src/lib/api';
 import { registerForPush } from '../src/lib/push';
 import { GlassCard } from '../src/components/GlassCard';
 import { theme } from '../src/theme';
@@ -80,7 +80,7 @@ export default function Home() {
           keyExtractor={(c) => c.id}
           renderItem={({ item }) => (
             <GlassCard style={{ marginBottom: 12 }}>
-              <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600' }}>{item.display_name}</Text>
+              <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600' }}>{routeLabel(item.display_name)}</Text>
             </GlassCard>
           )}
         />

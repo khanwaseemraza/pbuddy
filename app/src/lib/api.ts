@@ -62,6 +62,10 @@ export interface Corridor {
   display_name: string;
 }
 
+// Render a corridor name cleanly: the seeded display_name uses an ASCII "<->";
+// show a proper bidirectional arrow in the UI.
+export const routeLabel = (s: string): string => s.replace(/\s*<->\s*/g, ' ↔ ');
+
 export interface ParcelSummary {
   id: string;
   title: string;

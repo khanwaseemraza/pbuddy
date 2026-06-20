@@ -5,9 +5,9 @@
 BEGIN;
 
 INSERT INTO corridors (origin_city, dest_city, display_name) VALUES
-    ('London', 'Manchester',  'London <-> Manchester'),
-    ('London', 'Birmingham',  'London <-> Birmingham'),
-    ('London', 'Leeds',       'London <-> Leeds')
+    ('London', 'Manchester',  'London ↔ Manchester'),
+    ('London', 'Birmingham',  'London ↔ Birmingham'),
+    ('London', 'Leeds',       'London ↔ Leeds')
 ON CONFLICT (origin_city, dest_city) DO NOTHING;
 
 INSERT INTO legal_copy (key, version, body) VALUES

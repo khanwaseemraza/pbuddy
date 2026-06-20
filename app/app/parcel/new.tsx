@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '../../src/auth/AuthProvider';
-import { api, ApiError, gbp, type Corridor } from '../../src/lib/api';
+import { api, ApiError, gbp, routeLabel, type Corridor } from '../../src/lib/api';
 import { AddressPicker, type PickedAddress } from '../../src/components/AddressPicker';
 import {
   Checkbox, Field, FlowScreen, Panel, Pill, ProgressDots, ScreenHeading,
@@ -47,7 +47,7 @@ export default function NewParcel() {
 
   const valuePennies = Math.round(parseFloat(valueGbp || '0') * 100);
   const contribPennies = Math.round(parseFloat(contribGbp || '0') * 100);
-  const corridorName = corridors.find((c) => c.id === corridorId)?.display_name ?? '—';
+  const corridorName = routeLabel(corridors.find((c) => c.id === corridorId)?.display_name ?? '—');
   const SIZES = { S: { l: 30, w: 20, h: 10, g: 1000 }, M: { l: 45, w: 35, h: 20, g: 4000 }, L: { l: 60, w: 45, h: 35, g: 9000 } };
 
   const stepValid = [
@@ -119,7 +119,7 @@ export default function NewParcel() {
           <Field label="Route">
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {corridors.map((c) => (
-                <Pill key={c.id} label={c.display_name} active={c.id === corridorId} onPress={() => setCorridorId(c.id)} />
+                <Pill key={c.id} label={routeLabel(c.display_name)} active={c.id === corridorId} onPress={() => setCorridorId(c.id)} />
               ))}
             </View>
           </Field>
