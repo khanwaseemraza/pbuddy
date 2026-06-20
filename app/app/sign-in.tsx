@@ -1,11 +1,11 @@
 // Phone-OTP sign-in. Enter a number -> receive a code -> verify. On web this
 // uses Firebase's invisible reCAPTCHA (the container below maps to a DOM node).
 import { useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { Link, useRouter, type Href } from 'expo-router';
 import { sendOtp, type OtpConfirmation } from '../src/lib/firebase';
-import { GlassCard } from '../src/components/GlassCard';
-import { theme } from '../src/theme';
+import { FlowScreen, Panel, PrimaryButton, TextField } from '../src/components/flowkit';
+import { C } from '../src/components/glass';
 
 export default function SignIn() {
   const router = useRouter();
@@ -42,79 +42,41 @@ export default function SignIn() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg, padding: 24, justifyContent: 'center' }}>
-      <Text style={{ color: theme.accent, fontSize: 34, fontWeight: '800' }}>PBuddy</Text>
-      <Text style={{ color: theme.muted, fontSize: 16, marginTop: 4, marginBottom: 32 }}>
-        Cost-sharing parcel sending. Sign in with your phone.
+    <FlowScreen onBack={() => router.push('/')}>
+      <Text style={{ color: C.heading, fontSize: 30, fontWeight: '800', letterSpacing: -0.9 }}>Welcome to pBuddy</Text>
+      <Text style={{ color: C.body, fontSize: 16, marginTop: 8, marginBottom: 20 }}>
+        Sign in with your phone to send a parcel or share a trip.
       </Text>
 
-      <GlassCard>
-      {!confirmation ? (
-        <>
-          <Label>Phone number</Label>
-          <Input value={phone} onChangeText={setPhone} placeholder="+447700900000" keyboardType="phone-pad" />
-          <Button label="Send code" onPress={onSendCode} busy={busy} />
-        </>
-      ) : (
-        <>
-          <Label>Enter the 6-digit code</Label>
-          <Input value={code} onChangeText={setCode} placeholder="123456" keyboardType="number-pad" />
-          <Button label="Verify" onPress={onVerify} busy={busy} />
-          <Pressable onPress={() => setConfirmation(null)}>
-            <Text style={{ color: theme.muted, marginTop: 16, textAlign: 'center' }}>Use a different number</Text>
-          </Pressable>
-        </>
-      )}
+      <Panel>
+        {!confirmation ? (
+          <>
+            <Text style={{ color: C.heading, fontWeight: '700', marginBottom: 8 }}>Phone number</Text>
+            <TextField value={phone} onChangeText={setPhone} placeholder="+447700900000" keyboardType="phone-pad" style={{ marginBottom: 16 }} />
+            <PrimaryButton label="Send code" onPress={onSendCode} busy={busy} />
+          </>
+        ) : (
+          <>
+            <Text style={{ color: C.heading, fontWeight: '700', marginBottom: 8 }}>Enter the 6-digit code</Text>
+            <TextField value={code} onChangeText={setCode} placeholder="123456" keyboardType="number-pad" style={{ marginBottom: 16 }} />
+            <PrimaryButton label="Verify" onPress={onVerify} busy={busy} />
+            <Pressable onPress={() => setConfirmation(null)}>
+              <Text style={{ color: C.muted, marginTop: 16, textAlign: 'center', fontWeight: '600' }}>Use a different number</Text>
+            </Pressable>
+          </>
+        )}
+        {error ? <Text style={{ color: C.coralStatus, marginTop: 16 }}>{error}</Text> : null}
+      </Panel>
 
-      {error ? <Text style={{ color: theme.danger, marginTop: 16 }}>{error}</Text> : null}
-      </GlassCard>
-
-      {/* Consent: signing in accepts the legal bundle (recorded server-side). */}
-      <Text style={{ color: theme.muted, fontSize: 13, marginTop: 20, lineHeight: 19 }}>
-        By continuing you agree to PBuddy&apos;s{' '}
-        <Link href={'/legal/terms' as Href} style={{ color: theme.accent }}>Terms</Link>,{' '}
-        <Link href={'/legal/privacy' as Href} style={{ color: theme.accent }}>Privacy Policy</Link>, and{' '}
-        <Link href={'/legal/prohibited_items' as Href} style={{ color: theme.accent }}>Prohibited Items</Link> policy.
+      <Text style={{ color: C.muted, fontSize: 13, marginTop: 18, lineHeight: 19 }}>
+        By continuing you agree to pBuddy&apos;s{' '}
+        <Link href={'/legal/terms' as Href} style={{ color: C.coral, fontWeight: '600' }}>Terms</Link>,{' '}
+        <Link href={'/legal/privacy' as Href} style={{ color: C.coral, fontWeight: '600' }}>Privacy Policy</Link>, and{' '}
+        <Link href={'/legal/prohibited_items' as Href} style={{ color: C.coral, fontWeight: '600' }}>Prohibited Items</Link> policy.
       </Text>
 
       {/* Invisible reCAPTCHA container (web only). */}
       {Platform.OS === 'web' ? <View nativeID="recaptcha-container" /> : null}
-    </View>
-  );
-}
-
-function Label({ children }: { children: string }) {
-  return <Text style={{ color: theme.text, marginBottom: 8, fontWeight: '600' }}>{children}</Text>;
-}
-
-function Input(props: React.ComponentProps<typeof TextInput>) {
-  return (
-    <TextInput
-      {...props}
-      placeholderTextColor={theme.muted}
-      style={{
-        backgroundColor: theme.card,
-        color: theme.text,
-        borderWidth: 1,
-        borderColor: theme.border,
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        fontSize: 18,
-        marginBottom: 20,
-      }}
-    />
-  );
-}
-
-function Button({ label, onPress, busy }: { label: string; onPress: () => void; busy: boolean }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={busy}
-      style={{ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center', opacity: busy ? 0.6 : 1 }}
-    >
-      {busy ? <ActivityIndicator color={theme.accentText} /> : <Text style={{ color: theme.accentText, fontWeight: '800', fontSize: 16 }}>{label}</Text>}
-    </Pressable>
+    </FlowScreen>
   );
 }

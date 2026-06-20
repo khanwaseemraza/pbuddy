@@ -1,13 +1,15 @@
 // Public legal document reader. Renders the markdown body as readable text
 // (lightweight: headings/bullets styled, no markdown engine needed).
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, LEGAL_TITLES, type LegalDoc } from '../../src/lib/api';
-import { theme } from '../../src/theme';
+import { Glass, PageScreen, Skeleton } from '../../src/components/flowkit';
+import { C } from '../../src/components/glass';
 
 export default function LegalDocScreen() {
   const { key } = useLocalSearchParams<{ key: string }>();
+  const router = useRouter();
   const [doc, setDoc] = useState<LegalDoc | null>(null);
   const [error, setError] = useState(false);
 
@@ -20,37 +22,36 @@ export default function LegalDocScreen() {
   }, [key]);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} contentContainerStyle={{ padding: 24, paddingTop: 64 }}>
-      <Text style={{ color: theme.accent, fontSize: 24, fontWeight: '800', marginBottom: 16 }}>
-        {LEGAL_TITLES[key ?? ''] ?? 'Legal'}
-      </Text>
+    <PageScreen onBack={() => router.back()} title={LEGAL_TITLES[key ?? ''] ?? 'Legal'}>
       {error ? (
-        <Text style={{ color: theme.danger }}>Could not load this document.</Text>
+        <Glass><Text style={{ color: C.coralStatus }}>Could not load this document.</Text></Glass>
       ) : !doc ? (
-        <ActivityIndicator color={theme.accent} />
+        <><Skeleton height={28} /><Skeleton height={120} /></>
       ) : (
-        doc.body.split('\n').map((line, i) => <Line key={i} text={line} />)
+        <Glass style={{ padding: 24 }}>
+          {doc.body.split('\n').map((line, i) => <Line key={i} text={line} />)}
+          <Text style={{ color: C.muted2, marginTop: 20, fontSize: 12 }}>Version {doc.version}</Text>
+        </Glass>
       )}
-      {doc ? <Text style={{ color: theme.muted, marginTop: 24 }}>Version {doc.version}</Text> : null}
-    </ScrollView>
+    </PageScreen>
   );
 }
 
 // Minimal markdown line rendering: # / ## headings, - bullets, **bold** intro.
 function Line({ text }: { text: string }) {
   if (text.startsWith('## ')) {
-    return <Text style={{ color: theme.text, fontSize: 18, fontWeight: '700', marginTop: 18, marginBottom: 6 }}>{text.slice(3)}</Text>;
+    return <Text style={{ color: C.heading, fontSize: 18, fontWeight: '700', marginTop: 18, marginBottom: 6 }}>{text.slice(3)}</Text>;
   }
   if (text.startsWith('# ')) {
-    return <Text style={{ color: theme.text, fontSize: 22, fontWeight: '800', marginBottom: 8 }}>{text.slice(2)}</Text>;
+    return <Text style={{ color: C.heading, fontSize: 22, fontWeight: '800', marginBottom: 8 }}>{text.slice(2)}</Text>;
   }
   if (text.startsWith('- ')) {
-    return <Text style={{ color: theme.text, fontSize: 15, marginLeft: 8, marginBottom: 4 }}>{`•  ${text.slice(2)}`}</Text>;
+    return <Text style={{ color: C.heading, fontSize: 15, marginLeft: 8, marginBottom: 4, lineHeight: 22 }}>{`•  ${text.slice(2)}`}</Text>;
   }
   if (text.trim() === '') return <View style={{ height: 8 }} />;
   const bold = text.startsWith('**') && text.includes('**', 2);
   return (
-    <Text style={{ color: bold ? theme.text : theme.muted, fontSize: 15, fontWeight: bold ? '700' : '400', marginBottom: 6, lineHeight: 22 }}>
+    <Text style={{ color: bold ? C.heading : C.body, fontSize: 15, fontWeight: bold ? '700' : '400', marginBottom: 6, lineHeight: 22 }}>
       {text.replace(/\*\*/g, '')}
     </Text>
   );

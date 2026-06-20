@@ -2,13 +2,13 @@
 // breakdown) -> live tracking + hand-off QR/OTP. Built on the flow UI kit.
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { api, gbp, type BidSummary, type HandoffCodes } from '../../src/lib/api';
 import { useLiveBooking } from '../../src/lib/useLiveBooking';
 import { QrCode } from '../../src/components/QrCode';
 import {
-  Checkbox, Divider, FA, FlowScreen, Glass, PrimaryButton, ScreenHeading,
+  Checkbox, Divider, FA, PageScreen, Glass, PrimaryButton, ScreenHeading,
   StatusChip, SummaryRow,
 } from '../../src/components/flowkit';
 import { C } from '../../src/components/glass';
@@ -32,6 +32,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function ParcelDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { getToken } = useAuth();
   const [bids, setBids] = useState<BidSummary[] | null>(null);
   const [busyBid, setBusyBid] = useState<string | null>(null);
@@ -84,7 +85,7 @@ export default function ParcelDetail() {
   }
 
   return (
-    <FlowScreen>
+    <PageScreen onBack={() => router.back()}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {codes && accepted ? (
@@ -187,6 +188,6 @@ export default function ParcelDetail() {
           )}
         </>
       )}
-    </FlowScreen>
+    </PageScreen>
   );
 }

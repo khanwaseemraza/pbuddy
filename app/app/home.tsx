@@ -1,16 +1,17 @@
-// Authenticated home: proves the end-to-end auth path by calling the PBuddy API
-// (/corridors) with the Firebase ID token, and shows the signed-in number.
+// Authenticated home / hub. Two big actions (send a parcel, share a trip), quick
+// links into your activity, and the live routes. Built on the flow UI kit.
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { Link, Redirect, type Href } from 'expo-router';
+import { Pressable, Text, View } from 'react-native';
+import { Redirect, useRouter } from 'expo-router';
 import { useAuth } from '../src/auth/AuthProvider';
 import { api, ApiError, routeLabel, type Corridor } from '../src/lib/api';
 import { registerForPush } from '../src/lib/push';
-import { GlassCard } from '../src/components/GlassCard';
-import { theme } from '../src/theme';
+import { FA, FlowScreen, Glass, PageScreen, StatusChip, type FAName } from '../src/components/flowkit';
+import { C } from '../src/components/glass';
 
 export default function Home() {
   const { user, loading, getToken, signOut } = useAuth();
+  const router = useRouter();
   const [corridors, setCorridors] = useState<Corridor[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,11 +21,7 @@ export default function Home() {
       try {
         const token = await getToken();
         if (!token) return;
-        // Provision the user row on first load, then load data. Send the phone
-        // from the Firebase user as a fallback (some ID tokens omit phone_number).
-        // accept_legal records consent to the current legal bundle on first sign-up.
         await api.post('/users/me', token, { phone: user.phoneNumber, accept_legal: true });
-        // Register this device for push (native only; web is a no-op). Best-effort.
         void registerForPush(getToken);
         const data = await api.get<{ corridors: Corridor[] }>('/corridors', token);
         setCorridors(data.corridors);
@@ -38,77 +35,72 @@ export default function Home() {
     })();
   }, [user]);
 
-  if (loading) return <Centered><ActivityIndicator color={theme.accent} /></Centered>;
+  if (loading) {
+    return <FlowScreen><View /></FlowScreen>;
+  }
   if (!user) return <Redirect href="/sign-in" />;
 
-  return (
-    <View style={{ flex: 1, backgroundColor: theme.bg, padding: 24, paddingTop: 64 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <View>
-          <Text style={{ color: theme.accent, fontSize: 26, fontWeight: '800' }}>PBuddy</Text>
-          <Text style={{ color: theme.muted, marginTop: 2 }}>{user.phoneNumber}</Text>
-        </View>
-        <View style={{ flexDirection: 'row', gap: 16 }}>
-          <Link href={'/account' as Href} style={{ color: theme.muted }}>Account</Link>
-          <Link href={'/legal' as Href} style={{ color: theme.muted }}>Legal</Link>
-          <Pressable onPress={signOut}>
-            <Text style={{ color: theme.muted }}>Sign out</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: 12, marginTop: 28 }}>
-        <HubButton href="/parcels" label="Send a parcel" filled />
-        <HubButton href="/trips" label="Carry & cover costs" />
-      </View>
-      <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
-        <HubButton href="/jobs" label="My jobs" />
-        <HubButton href="/parcels" label="My parcels" />
-      </View>
-
-      <Text style={{ color: theme.text, fontSize: 18, fontWeight: '700', marginTop: 32, marginBottom: 12 }}>
-        Available corridors
-      </Text>
-
-      {error ? (
-        <Text style={{ color: theme.danger }}>{error}</Text>
-      ) : !corridors ? (
-        <ActivityIndicator color={theme.accent} />
-      ) : (
-        <FlatList
-          data={corridors}
-          keyExtractor={(c) => c.id}
-          renderItem={({ item }) => (
-            <GlassCard style={{ marginBottom: 12 }}>
-              <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600' }}>{routeLabel(item.display_name)}</Text>
-            </GlassCard>
-          )}
-        />
-      )}
+  const headerActions = (
+    <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+      <Pressable onPress={() => router.push('/account')}><Text style={{ color: C.muted, fontWeight: '600', fontSize: 14 }}>Account</Text></Pressable>
+      <Pressable onPress={() => router.push('/trust' as never)}><Text style={{ color: C.muted, fontWeight: '600', fontSize: 14 }}>Safety</Text></Pressable>
+      <Pressable onPress={signOut}><Text style={{ color: C.muted, fontWeight: '600', fontSize: 14 }}>Sign out</Text></Pressable>
     </View>
   );
-}
 
-function HubButton({ href, label, filled }: { href: Href; label: string; filled?: boolean }) {
   return (
-    <Link href={href} asChild>
-      <Pressable
-        style={{
-          flex: 1,
-          backgroundColor: filled ? theme.accent : theme.cardSolid,
-          borderWidth: filled ? 0 : 1,
-          borderColor: theme.border,
-          borderRadius: 12,
-          paddingVertical: 16,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={{ color: filled ? theme.accentText : theme.text, fontWeight: '800' }}>{label}</Text>
-      </Pressable>
-    </Link>
+    <PageScreen action={headerActions} title={`Hi${user.phoneNumber ? ', ' + user.phoneNumber : ''}`} subtitle="What would you like to do?">
+      {/* Two primary actions */}
+      <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap' }}>
+        <ActionTile icon="box" title="Send a parcel" body="Match with a verified Buddy going your way." onPress={() => router.push('/parcel/new')} filled />
+        <ActionTile icon="route" title="Share your trip" body="Travelling anyway? Bring parcels along." onPress={() => router.push('/trip/new')} />
+      </View>
+
+      {/* Activity quick links */}
+      <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+        <QuickLink icon="inbox" label="My parcels" onPress={() => router.push('/parcels')} />
+        <QuickLink icon="route" label="My trips" onPress={() => router.push('/trips')} />
+        <QuickLink icon="handshake" label="My jobs" onPress={() => router.push('/jobs')} />
+      </View>
+
+      {/* Live routes */}
+      <Text style={{ color: C.heading, fontSize: 18, fontWeight: '800', marginTop: 32, marginBottom: 12 }}>Live routes</Text>
+      {error ? (
+        <Glass><Text style={{ color: C.coralStatus }}>{error}</Text></Glass>
+      ) : !corridors ? (
+        <Glass style={{ height: 64 }}><Text style={{ color: C.muted }}>Loading…</Text></Glass>
+      ) : (
+        corridors.map((c) => (
+          <Glass key={c.id} style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <FA name="train" size={16} color={C.coral} />
+              <Text style={{ color: C.heading, fontSize: 16, fontWeight: '700' }}>{routeLabel(c.display_name)}</Text>
+            </View>
+            <StatusChip label="Live" tone="success" />
+          </Glass>
+        ))
+      )}
+    </PageScreen>
   );
 }
 
-function Centered({ children }: { children: React.ReactNode }) {
-  return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bg }}>{children}</View>;
+function ActionTile({ icon, title, body, onPress, filled }: { icon: FAName; title: string; body: string; onPress: () => void; filled?: boolean }) {
+  return (
+    <Pressable onPress={onPress} style={[{ flexGrow: 1, flexBasis: 220, borderRadius: 22, padding: 24 }, filled ? { backgroundColor: C.coral, shadowColor: C.coral, shadowOpacity: 0.3, shadowRadius: 40, shadowOffset: { width: 0, height: 18 } } : { backgroundColor: C.glass, borderWidth: 1, borderColor: C.glassBorder }]}>
+      <View style={{ width: 46, height: 46, borderRadius: 13, backgroundColor: filled ? 'rgba(255,255,255,0.22)' : C.tileTint, alignItems: 'center', justifyContent: 'center' }}>
+        <FA name={icon} size={20} color={filled ? '#fff' : C.coral} />
+      </View>
+      <Text style={{ color: filled ? '#fff' : C.heading, fontSize: 20, fontWeight: '800', marginTop: 16 }}>{title}</Text>
+      <Text style={{ color: filled ? 'rgba(255,255,255,0.9)' : C.muted, fontSize: 14, lineHeight: 20, marginTop: 6 }}>{body}</Text>
+    </Pressable>
+  );
+}
+
+function QuickLink({ icon, label, onPress }: { icon: FAName; label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={[{ flex: 1, borderRadius: 16, paddingVertical: 16, alignItems: 'center', gap: 8, backgroundColor: C.glass, borderWidth: 1, borderColor: C.glassBorder }]}>
+      <FA name={icon} size={18} color={C.coral} />
+      <Text style={{ color: C.heading, fontSize: 13.5, fontWeight: '700' }}>{label}</Text>
+    </Pressable>
+  );
 }

@@ -82,6 +82,66 @@ function Blob({ color, style }: { color: string; style: ViewStyle }) {
   return <View style={[{ position: 'absolute', width: 520, height: 520, borderRadius: 260, backgroundColor: color, opacity: 0.55 }, Platform.OS === 'web' ? ({ filter: 'blur(70px)' } as unknown as ViewStyle) : null, style]} />;
 }
 
+// Top-aligned page shell for hubs, lists and discovery (vs FlowScreen's centred
+// single-panel layout for short flows). Branded header + optional title/action.
+export function PageScreen({ children, title, subtitle, action, onBack }: { children: ReactNode; title?: string; subtitle?: string; action?: ReactNode; onBack?: () => void }) {
+  const router = useRouter();
+  const ready = useIconFont();
+  if (!ready) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={C.coral} />
+      </View>
+    );
+  }
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      {Platform.OS === 'web' && (
+        <View pointerEvents="none" style={{ position: 'absolute', inset: 0, overflow: 'hidden' } as ViewStyle}>
+          <Blob color={C.blob1} style={{ top: -180, right: -140 }} />
+          <Blob color={C.blob3} style={{ bottom: -220, left: -120 }} />
+        </View>
+      )}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ alignItems: 'center', paddingHorizontal: 20, paddingTop: 28, paddingBottom: 56 }}>
+        <View style={{ width: '100%', maxWidth: 640 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            {onBack ? (
+              <Pressable onPress={onBack} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+                <FA name="arrow-left-long" size={14} color={C.muted} />
+                <Text style={{ color: C.muted, fontSize: 14.5, fontWeight: '600' }}>Back</Text>
+              </Pressable>
+            ) : <Logo />}
+            {action}
+          </View>
+          {title ? (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ color: C.heading, fontSize: 30, lineHeight: 35, fontWeight: '800', letterSpacing: -0.9 }}>{title}</Text>
+              {subtitle ? <Text style={{ color: C.body, fontSize: 16, lineHeight: 23, marginTop: 8 }}>{subtitle}</Text> : null}
+            </View>
+          ) : null}
+          {children}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+export function EmptyState({ icon, title, subtitle }: { icon: FAName; title: string; subtitle: string }) {
+  return (
+    <View style={[glass(), { borderRadius: 22, padding: 32, alignItems: 'center' }]}>
+      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: C.tileTint, alignItems: 'center', justifyContent: 'center' }}>
+        <FA name={icon} size={24} color={C.coral} />
+      </View>
+      <Text style={{ color: C.heading, fontWeight: '800', fontSize: 18, marginTop: 14 }}>{title}</Text>
+      <Text style={{ color: C.muted, textAlign: 'center', marginTop: 6, lineHeight: 21 }}>{subtitle}</Text>
+    </View>
+  );
+}
+
+export function Skeleton({ height = 96 }: { height?: number }) {
+  return <View style={{ height, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.05)', marginBottom: 12 }} />;
+}
+
 export function ScreenHeading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <View style={{ marginBottom: 22 }}>

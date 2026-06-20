@@ -12,7 +12,7 @@ import { evaluateFrequency, type FrequencyLimits } from '../services/frequency.t
 interface CreateTripBody {
   corridor_id: string;
   direction: 'outbound' | 'return';
-  transport_mode: 'train' | 'bus' | 'coach' | 'car';
+  transport_mode: 'train' | 'bus' | 'coach' | 'car' | 'bike' | 'foot';
   depart_at: string;
   capacity_pieces?: number;
   journey_cost_pennies: number;

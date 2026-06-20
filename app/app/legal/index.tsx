@@ -1,12 +1,13 @@
 // Public legal hub. Lists the current legal documents; each opens a reader.
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { Link, type Href } from 'expo-router';
+import { Pressable, Text, View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 import { api, LEGAL_TITLES, type LegalDoc } from '../../src/lib/api';
-import { GlassCard } from '../../src/components/GlassCard';
-import { theme } from '../../src/theme';
+import { FA, Glass, PageScreen, Skeleton } from '../../src/components/flowkit';
+import { C } from '../../src/components/glass';
 
 export default function LegalIndex() {
+  const router = useRouter();
   const [docs, setDocs] = useState<Pick<LegalDoc, 'key' | 'version'>[] | null>(null);
 
   useEffect(() => {
@@ -17,27 +18,19 @@ export default function LegalIndex() {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg, padding: 24, paddingTop: 64 }}>
-      <Text style={{ color: theme.accent, fontSize: 26, fontWeight: '800', marginBottom: 20 }}>Legal</Text>
+    <PageScreen onBack={() => router.back()} title="Legal" subtitle="The documents that govern using pBuddy.">
       {!docs ? (
-        <ActivityIndicator color={theme.accent} />
+        <><Skeleton height={56} /><Skeleton height={56} /><Skeleton height={56} /></>
       ) : (
-        <FlatList
-          data={docs}
-          keyExtractor={(d) => d.key}
-          renderItem={({ item }) => (
-            <Link href={`/legal/${item.key}` as Href} asChild>
-              <Pressable>
-                <GlassCard style={{ marginBottom: 12 }}>
-                  <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600' }}>
-                    {LEGAL_TITLES[item.key] ?? item.key}
-                  </Text>
-                </GlassCard>
-              </Pressable>
-            </Link>
-          )}
-        />
+        docs.map((item) => (
+          <Pressable key={item.key} onPress={() => router.push(`/legal/${item.key}` as Href)}>
+            <Glass style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ color: C.heading, fontSize: 16, fontWeight: '700' }}>{LEGAL_TITLES[item.key] ?? item.key}</Text>
+              <FA name="chevron-right" size={13} color={C.muted2} />
+            </Glass>
+          </Pressable>
+        ))
       )}
-    </View>
+    </PageScreen>
   );
 }

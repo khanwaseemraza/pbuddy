@@ -52,7 +52,7 @@ export interface ProGate {
   tier: 'casual_buddy' | 'pro_buddy';
   rtwStatus: 'not_started' | 'pending' | 'verified' | 'rejected';
   hireRewardPolicyId: string | null;
-  transportMode: 'train' | 'bus' | 'coach' | 'car';
+  transportMode: 'train' | 'bus' | 'coach' | 'car' | 'bike' | 'foot';
 }
 
 export function proBypassAllowed(gate: ProGate): boolean {

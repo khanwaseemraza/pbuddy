@@ -1,14 +1,14 @@
 // Account & data (E16-S1, GDPR DSAR self-serve). Lets the signed-in user download
 // everything we hold about them, and request erasure of their account. Erasure
 // anonymises PII while the immutable compliance audit trail is retained under our
-// legal-obligation basis. No emoji — premium brand.
+// legal-obligation basis. Built on the flow UI kit.
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '../src/auth/AuthProvider';
 import { api, ApiError } from '../src/lib/api';
-import { Card, ScreenTitle } from '../src/components/kit';
-import { theme } from '../src/theme';
+import { Glass, PageScreen, PrimaryButton } from '../src/components/flowkit';
+import { C } from '../src/components/glass';
 
 export default function Account() {
   const router = useRouter();
@@ -28,7 +28,6 @@ export default function Account() {
       const data = await api.get<Record<string, unknown>>('/users/me/export', token);
       const json = JSON.stringify(data, null, 2);
       if (Platform.OS === 'web') {
-        // Trigger a download of the bundle in the browser.
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -38,7 +37,6 @@ export default function Account() {
         URL.revokeObjectURL(url);
         setMsg('Your data has been downloaded.');
       } else {
-        setMsg('Your data export is ready (shown below).');
         setMsg(json.length > 1200 ? json.slice(0, 1200) + '\n…' : json);
       }
     } catch {
@@ -70,63 +68,52 @@ export default function Account() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.bg }} contentContainerStyle={{ padding: 24, paddingTop: 64, paddingBottom: 48 }}>
+    <PageScreen onBack={() => router.back()} title="Account & data" subtitle="Your privacy rights, under UK GDPR.">
       <Stack.Screen options={{ headerShown: false }} />
-      <ScreenTitle title="Account & data" subtitle="Your privacy rights, under UK GDPR." />
 
-      <Card style={{ marginBottom: 16 }}>
-        <Text style={{ color: theme.text, fontWeight: '800', marginBottom: 4 }}>Download my data</Text>
-        <Text style={{ color: theme.muted, fontSize: 13, marginBottom: 14, lineHeight: 19 }}>
-          Get a copy of everything we hold about you — your profile, parcels, trips, bids,
+      <Glass style={{ marginBottom: 16 }}>
+        <Text style={{ color: C.heading, fontWeight: '800', fontSize: 16, marginBottom: 4 }}>Download my data</Text>
+        <Text style={{ color: C.muted, fontSize: 14, marginBottom: 16, lineHeight: 20 }}>
+          Get a copy of everything we hold about you — your profile, parcels, trips, offers,
           bookings, payment records, and consent history.
         </Text>
-        <Pressable
-          onPress={exportData}
-          disabled={busy !== null}
-          style={{ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: busy ? 0.6 : 1 }}
-        >
-          <Text style={{ color: theme.accentText, fontWeight: '800' }}>
-            {busy === 'export' ? 'Preparing…' : 'Download my data'}
-          </Text>
-        </Pressable>
-      </Card>
+        <PrimaryButton label={busy === 'export' ? 'Preparing…' : 'Download my data'} icon="download" onPress={exportData} busy={busy === 'export'} disabled={busy !== null} />
+      </Glass>
 
-      <Card>
-        <Text style={{ color: theme.text, fontWeight: '800', marginBottom: 4 }}>Delete my account</Text>
-        <Text style={{ color: theme.muted, fontSize: 13, marginBottom: 14, lineHeight: 19 }}>
+      <Glass>
+        <Text style={{ color: C.heading, fontWeight: '800', fontSize: 16, marginBottom: 4 }}>Delete my account</Text>
+        <Text style={{ color: C.muted, fontSize: 14, marginBottom: 16, lineHeight: 20 }}>
           This permanently closes your account and removes your personal details. We keep a
-          minimal, anonymised compliance record where the law requires it. You can’t delete
+          minimal, anonymised compliance record where the law requires it. You can't delete
           while a booking is in progress.
         </Text>
         {!confirmErase ? (
           <Pressable
             onPress={() => setConfirmErase(true)}
             disabled={busy !== null}
-            style={{ borderWidth: 1, borderColor: theme.danger, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
+            style={{ borderWidth: 1, borderColor: '#c13515', borderRadius: 16, paddingVertical: 15, alignItems: 'center' }}
           >
-            <Text style={{ color: theme.danger, fontWeight: '800' }}>Delete my account</Text>
+            <Text style={{ color: '#c13515', fontWeight: '800' }}>Delete my account</Text>
           </Pressable>
         ) : (
           <View style={{ gap: 10 }}>
-            <Text style={{ color: theme.text, fontWeight: '700' }}>Are you sure? This can’t be undone.</Text>
+            <Text style={{ color: C.heading, fontWeight: '700' }}>Are you sure? This can't be undone.</Text>
             <Pressable
               onPress={eraseAccount}
               disabled={busy !== null}
-              style={{ backgroundColor: theme.danger, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: busy ? 0.6 : 1 }}
+              style={{ backgroundColor: '#c13515', borderRadius: 16, paddingVertical: 15, alignItems: 'center', opacity: busy ? 0.6 : 1 }}
             >
-              <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>
-                {busy === 'erase' ? 'Deleting…' : 'Yes, delete permanently'}
-              </Text>
+              <Text style={{ color: '#fff', fontWeight: '800' }}>{busy === 'erase' ? 'Deleting…' : 'Yes, delete permanently'}</Text>
             </Pressable>
             <Pressable onPress={() => setConfirmErase(false)} style={{ paddingVertical: 10, alignItems: 'center' }}>
-              <Text style={{ color: theme.muted, fontWeight: '700' }}>Cancel</Text>
+              <Text style={{ color: C.muted, fontWeight: '700' }}>Cancel</Text>
             </Pressable>
           </View>
         )}
-      </Card>
+      </Glass>
 
-      {msg ? <Text style={{ color: theme.muted, marginTop: 16, fontSize: 12 }}>{msg}</Text> : null}
-      {error ? <Text style={{ color: theme.danger, marginTop: 16 }}>{error}</Text> : null}
-    </ScrollView>
+      {msg ? <Text style={{ color: C.muted, marginTop: 16, fontSize: 12 }}>{msg}</Text> : null}
+      {error ? <Text style={{ color: C.coralStatus, marginTop: 16 }}>{error}</Text> : null}
+    </PageScreen>
   );
 }
