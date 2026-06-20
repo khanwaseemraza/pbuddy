@@ -23,7 +23,26 @@ export function FA({ name, size = 16, color = C.coral }: { name: FAName; size?: 
   return <FontAwesome6 name={name} size={size} color={color} solid />;
 }
 
-// Full-screen shell: warm bg, web ambient blobs, optional back header, scroll.
+// Brand mark (matches the landing).
+export function Logo() {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: C.coral, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>p</Text>
+      </View>
+      <Text style={{ color: C.heading, fontSize: 19, fontWeight: '800', letterSpacing: -0.4 }}>pBuddy</Text>
+    </View>
+  );
+}
+
+// A contained glass panel — the surface forms/steps live on so they read as a
+// real, finished checkout rather than loose fields on an empty background.
+export function Panel({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+  return <View style={[glass(), { borderRadius: 26, padding: 26 }, style]}>{children}</View>;
+}
+
+// Full-screen shell: warm bg, web ambient blobs, a branded header, and a single
+// centred column so short content sits framed (not floating in a void).
 export function FlowScreen({ children, onBack, contentStyle }: { children: ReactNode; onBack?: () => void; contentStyle?: ViewStyle }) {
   const router = useRouter();
   const ready = useIconFont();
@@ -38,23 +57,29 @@ export function FlowScreen({ children, onBack, contentStyle }: { children: React
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {Platform.OS === 'web' && (
         <View pointerEvents="none" style={{ position: 'absolute', inset: 0, overflow: 'hidden' } as ViewStyle}>
-          <Blob color={C.blob1} style={{ top: -180, right: -120 }} />
-          <Blob color={C.blob3} style={{ bottom: -220, left: -120 }} />
+          <Blob color={C.blob1} style={{ top: -180, right: -140 }} />
+          <Blob color={C.blob2} style={{ top: '40%', left: -160 }} />
+          <Blob color={C.blob3} style={{ bottom: -220, right: '20%' }} />
         </View>
       )}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={[{ padding: 24, paddingTop: 56, paddingBottom: 56, maxWidth: 640, width: '100%', alignSelf: 'center' }, contentStyle]}>
-        <Pressable onPress={() => (onBack ? onBack() : router.back())} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-          <FA name="arrow-left-long" size={14} color={C.muted} />
-          <Text style={{ color: C.muted, fontSize: 14.5, fontWeight: '600' }}>Back</Text>
-        </Pressable>
-        {children}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 32 }}>
+        <View style={[{ width: '100%', maxWidth: 540 }, contentStyle]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <Logo />
+            <Pressable onPress={() => (onBack ? onBack() : router.back())} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+              <FA name="arrow-left-long" size={13} color={C.muted} />
+              <Text style={{ color: C.muted, fontSize: 14.5, fontWeight: '600' }}>Back</Text>
+            </Pressable>
+          </View>
+          {children}
+        </View>
       </ScrollView>
     </View>
   );
 }
 
 function Blob({ color, style }: { color: string; style: ViewStyle }) {
-  return <View style={[{ position: 'absolute', width: 520, height: 520, borderRadius: 260, backgroundColor: color, opacity: 0.6 }, Platform.OS === 'web' ? ({ filter: 'blur(60px)' } as unknown as ViewStyle) : null, style]} />;
+  return <View style={[{ position: 'absolute', width: 520, height: 520, borderRadius: 260, backgroundColor: color, opacity: 0.55 }, Platform.OS === 'web' ? ({ filter: 'blur(70px)' } as unknown as ViewStyle) : null, style]} />;
 }
 
 export function ScreenHeading({ title, subtitle }: { title: string; subtitle?: string }) {

@@ -8,7 +8,7 @@ import { useAuth } from '../../src/auth/AuthProvider';
 import { api, ApiError, gbp, type Corridor } from '../../src/lib/api';
 import { AddressPicker, type PickedAddress } from '../../src/components/AddressPicker';
 import {
-  Checkbox, Field, FlowScreen, Glass, Pill, ProgressDots, ScreenHeading,
+  Checkbox, Field, FlowScreen, Panel, Pill, ProgressDots, ScreenHeading,
   StepNav, SummaryRow, TextField, Divider,
 } from '../../src/components/flowkit';
 import { C } from '../../src/components/glass';
@@ -112,6 +112,7 @@ export default function NewParcel() {
       <Stack.Screen options={{ headerShown: false }} />
       <ProgressDots step={step} total={STEPS.length} />
 
+      <Panel>
       {step === 0 && (
         <>
           <ScreenHeading title="Where's it going?" subtitle="Choose the route your parcel will travel, and which way." />
@@ -182,7 +183,7 @@ export default function NewParcel() {
       {step === 4 && (
         <>
           <ScreenHeading title="Review & post" subtitle="Check the details — Buddies on your route will see this." />
-          <Glass>
+          <View style={{ borderWidth: 1, borderColor: C.line, borderRadius: 16, padding: 16, backgroundColor: 'rgba(255,255,255,0.5)' }}>
             <SummaryRow label="Route" value={`${corridorName} · ${direction}`} />
             <SummaryRow label="Pickup" value={pickup?.postcode ?? '—'} />
             <SummaryRow label="Drop-off" value={dropoff?.postcode ?? '—'} />
@@ -190,7 +191,7 @@ export default function NewParcel() {
             <SummaryRow label="Value" value={gbp(valuePennies)} />
             <Divider />
             <SummaryRow label={pricingMode === 'auction' ? 'Most you would share' : 'Your contribution'} value={gbp(contribPennies)} strong />
-          </Glass>
+          </View>
           <Text style={{ color: C.muted, fontSize: 13, marginTop: 12, lineHeight: 19 }}>
             Your Buddy's contributions are always capped to their own journey cost — so you never overpay.
           </Text>
@@ -206,6 +207,7 @@ export default function NewParcel() {
         busy={busy}
         disabled={!stepValid}
       />
+      </Panel>
     </FlowScreen>
   );
 }
